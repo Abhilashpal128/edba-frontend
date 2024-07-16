@@ -49,12 +49,14 @@ const notificationData = [
   },
 ];
 
-export default function Notification() {
+export default function Notification({ Notifications }) {
   const { theme } = useThemeContext();
   const navigation = useNavigation();
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(Notifications);
   const [selectedNotification, setSelectedNotification] = useState();
   const [isNotificationSelected, setIsNotificationSeletd] = useState(false);
+
+  console.log(`Notifications in student `, Notifications);
 
   const refRBSheet = useRef();
   const isFocused = useIsFocused();
@@ -108,9 +110,9 @@ export default function Notification() {
     });
   }, [navigation, theme]);
 
-  useEffect(() => {
-    setNotifications(notificationData);
-  }, [isFocused]);
+  // useEffect(() => {
+  //   setNotifications(Notifications);
+  // }, [isFocused]);
 
   useEffect(() => {
     if (selectedNotification) {
@@ -123,6 +125,7 @@ export default function Notification() {
   const handlerejectRequest = () => {};
 
   const renderNotifications = ({ item }) => {
+    const formattedTime = moment(item?.sentAt).format("h:mm A");
     return (
       <TouchableOpacity
         style={{ gap: 2 }}
@@ -156,7 +159,7 @@ export default function Notification() {
               fontSize: 12,
             }}
           >
-            {item.time}
+            {formattedTime}
           </Text>
         </View>
         <Text
@@ -165,7 +168,7 @@ export default function Notification() {
             fontSize: 12,
           }}
         >
-          {item.message}
+          {item?.body}
         </Text>
       </TouchableOpacity>
     );

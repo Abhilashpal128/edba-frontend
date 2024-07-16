@@ -92,7 +92,7 @@ export default function Assignments({
                       width: "30%",
                       height: 80,
                       display: "flex",
-                      backgroundColor: hexToRgba(item?.colorCode, 0.15),
+                      backgroundColor: hexToRgba(`${item?.colorCode}`, 0.15),
                       flexWrap: "wrap",
                       justifyContent: "center",
                       alignItems: "center",

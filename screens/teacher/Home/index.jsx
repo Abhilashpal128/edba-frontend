@@ -223,6 +223,7 @@ export default function TeacherHome() {
       const response = await post("notiifcation/get", {
         id: userId,
       });
+      console.log();
       if (response?.errCode == -1) {
         // setNotifications(response?.data);
         // setRefreshing(false);

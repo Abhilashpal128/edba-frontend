@@ -169,15 +169,23 @@ export default function AddAssignment() {
       const UploadDocumentTos3 = async () => {
         try {
           const uploadTasks = documents.map(async (document) => {
-            const fileContents = await FileSystem.readAsStringAsync(
-              document.uri,
-              {
-                encoding: FileSystem.EncodingType.Base64,
+            let fileContents;
+            if (document.uri.startsWith("content://")) {
+              // Handle content URI
+              const fileInfo = await FileSystem.getInfoAsync(document.uri);
+              if (!fileInfo.exists) {
+                throw new Error(`File does not exist: ${document.uri}`);
               }
-            );
-
+              fileContents = await FileSystem.readAsStringAsync(document.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+            } else {
+              // Handle other URIs (file://, etc.)
+              fileContents = await FileSystem.readAsStringAsync(document.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+            }
             const buffer = Buffer.from(fileContents, "base64");
-
             const params = {
               Bucket: "edba-dev-bucket",
               Key: `Assignments/${document.name}`,

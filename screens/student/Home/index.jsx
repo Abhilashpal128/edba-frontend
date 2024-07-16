@@ -111,6 +111,7 @@ export default function StudentHome() {
   const [refreshing, setRefreshing] = useState(false);
   const [classesLoading, setClassedLoading] = useState(true);
   const [assignmentLoading, setAssignmentLoading] = useState(true);
+  const [unseenCount, setUnseenCount] = useState(0);
 
   const slideAnim = useRef(new Animated.Value(1000)).current;
   useEffect(() => {
@@ -219,6 +220,28 @@ export default function StudentHome() {
   useLayoutEffect(() => {
     navigation.setOptions(HomeHeader({ navigation, theme }));
   }, [navigation, theme]);
+
+  const fetchAllNotifications = async () => {
+    try {
+      const response = await post("notiifcation/get", {
+        id: userId,
+      });
+      console.log();
+      if (response?.errCode == -1) {
+        const unseenNotifications = response?.data?.filter(
+          (notification) =>
+            !notification?.seen &&
+            notification?.title == "Timetable Exchange Request"
+        );
+        setUnseenCount(unseenNotifications.length);
+        console.log(`unseenNotifications.length`, unseenNotifications?.length);
+      } else {
+      }
+    } catch (error) {
+      console.log(`error while fetching Notifications`, error);
+    } finally {
+    }
+  };
 
   return (
     <Animated.View
