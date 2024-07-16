@@ -48,10 +48,13 @@ export default function TeacherHome() {
   console.log(`today`, today);
   const navigation = useNavigation();
   const user = useSelector((state) => state?.login?.user);
+  const userId = user?.id;
   const TeacherId = user?.teacherId;
   const userProfileImage = "../../../assets/logo.png"; //will be taken from  redux
   const isFocused = useIsFocused();
   const [refreshing, setRefreshing] = useState(false);
+  const Token = useSelector((state) => state?.token?.token);
+  console.log(`Token in homep[page]`, Token);
 
   useEffect(() => {
     fetchNotices();
@@ -72,7 +75,7 @@ export default function TeacherHome() {
       // }
       setIsLoading(true);
       const response = await post("timetable/search", {
-        teacher: TeacherId,
+        teacherId: TeacherId,
         date: today,
       });
       console.log(`TodaysClassesData response`, response);
@@ -109,7 +112,7 @@ export default function TeacherHome() {
       setIsLoading(false);
     } finally {
       setIsLoading(false);
-      setRefreshing(false);
+      setRefreshing(true);
     }
 
     // const response = await get("events");
@@ -138,16 +141,14 @@ export default function TeacherHome() {
       duration: "1 Hour",
     },
   ];
+  // { value: 36, label: "11B" },
+  // { value: 50, label: "11C" },
+  // { value: 30, label: "11D" },
+  // { value: 18, label: "11E" },
+  // { value: 18, label: "12A" },
+  // { value: 18, label: "12B" },
 
-  const GraphData = [
-    { value: 50, label: "11A" },
-    { value: 36, label: "11B" },
-    { value: 50, label: "11C" },
-    { value: 30, label: "11D" },
-    { value: 18, label: "11E" },
-    { value: 18, label: "12A" },
-    { value: 18, label: "12B" },
-  ];
+  const GraphData = [{ value: 50, label: "11A" }];
   const classData = [
     {
       classId: "Class-52024-e2a093f5-7ad4-433b-b8f2-cf04d279ba2c",
@@ -175,6 +176,7 @@ export default function TeacherHome() {
       },
     ],
   };
+
   const showToast = () => {
     Toast.show({
       type: "success",
@@ -195,18 +197,61 @@ export default function TeacherHome() {
       if (storedNotifications) {
         // setNotifications(JSON.parse(storedNotifications));
         const NotificationData = JSON.parse(storedNotifications);
-        const unseenNotifications = NotificationData.filter(
-          (notification) => !notification.seen
+        const unseenNotifications = NotificationData?.filter(
+          (notification) =>
+            !notification.seen &&
+            notification?.request?.content?.title ==
+              "Timetable Exchange Request"
         );
         setUnseenCount(unseenNotifications.length);
-        console.log(`unseenNotifications.length`, unseenNotifications.length);
-        console.log(`Notifications Home page`, storedNotifications);
+        console.log(`unseenNotifications.length`, unseenNotifications?.length);
+        // console.log(`unseenNotifications`, NotificationData[20]);
+        console.log(
+          `Notifications Home page`,
+          NotificationData[0]?.request?.content?.title
+        );
       }
     } catch (error) {
       console.error("Failed to fetch notifications", error);
     }
   };
 
+  const fetchAllNotifications = async () => {
+    try {
+      setRefreshing(true);
+      setIsLoading(true);
+      const response = await post("notiifcation/get", {
+        id: userId,
+      });
+      if (response?.errCode == -1) {
+        // setNotifications(response?.data);
+        // setRefreshing(false);
+        // setIsLoading(false);
+        const unseenNotifications = response?.data?.filter(
+          (notification) =>
+            !notification?.seen &&
+            notification?.title == "Timetable Exchange Request"
+        );
+        setUnseenCount(unseenNotifications.length);
+        console.log(`unseenNotifications.length`, unseenNotifications?.length);
+      } else {
+        // setNotifications([]);
+        // setRefreshing(false);
+        // setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(`error while fetching Notifications`, error);
+      setRefreshing(false);
+      setIsLoading(false);
+    } finally {
+      setRefreshing(false);
+      setIsLoading(false);
+    }
+  };
+
+  // const emptyNotification = async () => {
+  //   await AsyncStorage.setItem("notifications", "");
+  // };
   useEffect(() => {
     // showToast();
     // setExchangeRequests(exchangeRequest);
@@ -215,7 +260,9 @@ export default function TeacherHome() {
     // }
     showToast();
 
-    fetchNotifications();
+    // fetchNotifications();
+    fetchAllNotifications();
+    // emptyNotification();
   }, [isFocused]);
 
   // useEffect(() => {
@@ -386,21 +433,13 @@ export default function TeacherHome() {
           }
         >
           <View style={{}}>
-            <TodaysClasses
-              TodaysClassesData={todaysClassesData}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-            />
+            <TodaysClasses TodaysClassesData={todaysClassesData} />
             <NoticesEvents
               Events={NoticesData}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
             />
-            <TodayAttendance
-              GraphData={ptData}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-            />
+            <TodayAttendance GraphData={GraphData} />
           </View>
           {unseenCount > 0 && <Toast />}
         </ScrollView>

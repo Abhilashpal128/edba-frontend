@@ -16,9 +16,9 @@ import {
   RefreshControl,
 } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
-import BasicDetails from "./BasicDetails";
-import WorkLocationDetails from "./WorkLocationDetails";
-import PersonalDetails from "./PersonalDetails";
+// import BasicDetails from "./BasicDetails";
+// import WorkLocationDetails from "./WorkLocationDetails";
+// import PersonalDetails from "./PersonalDetails";
 import { Ionicons, Entypo, AntDesign } from "react-native-vector-icons";
 import Icon from "react-native-vector-icons/Ionicons";
 import EditPersonalDetail from "./EditPersonalDetail";
@@ -27,13 +27,14 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useThemeContext } from "../../../hooks/useTheme";
 import { get } from "../../../utils/apis/TeacherApis/login";
 import { useSelector } from "react-redux";
-import WorkExperienceDetails from "./WorkExperienceDetails";
-import EducationalDetails from "./EducationalDetails";
+// import WorkExperienceDetails from "./WorkExperienceDetails";
+// import EducationalDetails from "./EducationalDetails";
 import { useIsFocused } from "@react-navigation/native";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+// import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 import moment from "moment";
 import { useTheme } from "react-native-paper";
+import { post } from "../../../utils/apis/StudentApis";
 
 const data = [
   { label: "Date Of Joining", value: "01/05/24" },
@@ -47,7 +48,7 @@ const data = [
 
 export default function PersonalDetail({ navigation }) {
   const userData = useSelector((state) => state.login.user);
-  const TeacherId = userData?.teacherId;
+  const studentId = userData?.studentId;
   const { theme } = useThemeContext();
 
   const layout = useWindowDimensions();
@@ -231,7 +232,9 @@ export default function PersonalDetail({ navigation }) {
   const fetchUserDetails = async () => {
     try {
       setIsLoading(true);
-      const response = await get(`teacher/${TeacherId}`);
+      const response = await post(`student/getOne-profile`, {
+        id: studentId,
+      });
       if (response.errCode == -1) {
         console.log(`ProfileResponse`, response);
         setProfileData(response?.data);
@@ -248,7 +251,7 @@ export default function PersonalDetail({ navigation }) {
         setRoutes(TabRoutes);
         setIsLoading(false);
       } else {
-        console.log(`no data found for ${TeacherId}`);
+        console.log(`no data found for ${studentId}`);
         setProfileData([]);
         setIsLoading(false);
       }

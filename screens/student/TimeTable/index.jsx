@@ -1,4 +1,11 @@
-import { useEffect, useRef, useLayoutEffect, useState, useMemo } from "react";
+import {
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   SafeAreaView,
   View,
@@ -9,9 +16,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
-import { useTheme, Divider } from "react-native-paper";
+import { useTheme, Divider, Avatar } from "react-native-paper";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { Feather } from "react-native-vector-icons";
@@ -21,10 +30,11 @@ import { AntDesign } from "react-native-vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 // import { post, get } from "@/utils/apis";
 import moment from "moment";
-import { DrawerActions } from "@react-navigation/native";
+import { DrawerActions, useIsFocused } from "@react-navigation/native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import Timetable from "react-native-calendar-timetable";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/StudentApis";
 
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THURS", "FRI", "SAT"];
 
@@ -154,93 +164,163 @@ export default function StudentTimeTable({ navigation, route }) {
   const [date, setDate] = useState(
     new Date().getDate().toString().padStart(2, "0")
   );
-
+  const [classData, setClassData] = useState();
   const [day, setDay] = useState();
   const [month, setMonth] = useState(moment().format("MM"));
   const [year, setYear] = useState(moment().format("YYYY"));
   const [lectureList, setLectureList] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isFocused = useIsFocused();
+  const userdata = useSelector((state) => state?.login?.user);
+  const studentId = userdata?.studentId;
+
+  console.log(`datedatedate`, date);
+  console.log(`Class-52024-e2a093f5-7ad4-433b-b8f2-cf04d279ba2c`, month);
+  console.log(`year`, year);
+
+  const fetchClassData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await post("classes/getClass", {
+        studentId: studentId,
+      });
+      if (response?.errCode == -1) {
+        console.log(`response?.data?.id`, response?.data[0]?.id);
+        setClassData(response?.data[0]);
+        const classId = response?.data[0]?.id;
+        fetchLectures(classId);
+        setIsLoading(false);
+        console.log(`classId`, classId);
+      } else {
+        console.log(`error while fetching class Data`);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const fetchLectures = async (classId) => {
+    try {
+      const response = await post("timetable/student", {
+        classId: classId,
+        date: `${year}-${month}-${date}`,
+      });
+      console.log(`response`, response);
+      if (response?.errCode == -1) {
+        setLectureList(response?.data);
+      } else {
+        setLectureList([]);
+      }
+    } catch (error) {
+      console.log(`error from fetchLectures in timetable`, error);
+    }
+  };
 
   useEffect(() => {
-    setLectureList(LecturesListData);
-  }, []);
+    // setLectureList(LecturesListData);
+    fetchClassData();
+  }, [isFocused]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      header: () => {
-        return (
-          <View
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          style={{ marginLeft: 20 }}
+        >
+          <Ionicons name="menu" size={25} color={theme.secondaryTextColor} />
+        </TouchableOpacity>
+      ),
+
+      headerTitle: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            numberOfLines={1}
             style={{
-              paddingTop: 20,
-              paddingBottom: 10,
-              backgroundColor: theme.backgroundColor,
+              fontSize: 16,
+              marginLeft: 10,
+              color: theme.primaryTextColor,
+              fontWeight: "bold",
+              fontFamily: "Poppins_600SemiBold",
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginTop: 40,
-                marginHorizontal: 20,
-              }}
-            >
-              <TouchableOpacity onPress={() => navigation.openDrawer()}>
-                <Ionicons
-                  name="menu"
-                  size={25}
-                  color={theme.secondaryTextColor}
-                />
-              </TouchableOpacity>
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: 16,
-                  marginLeft: 10,
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
-                  fontFamily: "Poppins_600SemiBold",
-                }}
-              >
-                TimeTable
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  width: "20%",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate("Notification");
-                  }}
-                >
-                  <Feather
-                    name="bell"
-                    size={20}
-                    color={theme.secondaryTextColor}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        );
+            TimeTable
+          </Text>
+        </View>
+      ),
+
+      headerRight: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            justifyContent: "flex-end",
+            marginRight: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Notification");
+            }}
+          >
+            <Feather name="bell" size={20} color={theme.secondaryTextColor} />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerStyle: {
+        backgroundColor: theme.backgroundColor,
       },
+      headerTitleAlign: "center", // Adjust alignment for header title (if needed)
+      headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   useEffect(() => {
     getDateDayList(parseInt(year), parseInt(month));
-    getTodaysLectures(year + "-" + month + "-" + date);
+    // getTodaysLectures(year + "-" + month + "-" + date);
     setTimeout(function (u) {
       scrollToStart(new Date().getDate() - 2);
     }, 100);
-  }, []);
+  }, [isFocused]);
 
   const getDateDayList = (year, month) => {
     const dateArray = generateDateArrayForMonthAndYear(year, month);
     setDateDayList(dateArray);
+  };
+
+  const getTodaysLectureOnDayChange = async (date) => {
+    try {
+      setIsLoading(true);
+      const response = await post("timetable/student", {
+        classId: classData?.id,
+        date: date,
+      });
+      console.log(`response`, response);
+      if (response?.errCode == -1) {
+        setLectureList(response?.data);
+        setIsLoading(false);
+      } else {
+        setLectureList([]);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(`error from fetchLectures in timetable`, error);
+      setIsLoading(false);
+    }
   };
 
   const scrollToStart = (date) => {
@@ -270,57 +350,63 @@ export default function StudentTimeTable({ navigation, route }) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  const getTodaysLectures = (date) => {
-    // const data = {
-    //   batch: account.id,
-    //   division: account.id,
-    //   institute_id: user.employee.id,
-    //   day: daysOfWeek[new Date(date).getDay()],
-    //   startDate: moment(new Date(date))
-    //     .startOf("day")
-    //     .format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
-    //   endDate: moment(new Date(date))
-    //     .endOf("day")
-    //     .format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
-    // };
-    // setRange({
-    //   from: moment(new Date(date)).startOf("day").format("YYYY-MM-DD"),
-    //   to: moment(new Date(date)).endOf("day").format("YYYY-MM-DD"),
-    // });
-    const tempArray = [];
-    // post("/user/lectures", data)
-    //   .then((response) => {
-    //     if (response.data.errCode == -1) {
-    //       const dataset = response.data.data;
-    //       for (var i = 0; i < dataset.length; i++) {
-    //         const start =
-    //           moment(new Date(date)).format("YYYY-MM-DD") +
-    //           " " +
-    //           moment(dataset[i]["startTime"], "HHmm").format("HH:mm");
-    //         const end =
-    //           moment(new Date(date)).format("YYYY-MM-DD") +
-    //           " " +
-    //           moment(dataset[i]["endTime"], "HHmm").format("HH:mm");
-    //         const temp = {
-    //           index: i + 1,
-    //           subject: dataset[i]["subject"]["name"],
-    //           class: dataset[i]["class"]["alias"],
-    //           color: dataset[i]["subject"]["color"] || getRandomHexColor(),
-    //           room: dataset[i]["division"],
-    //           startDate: moment(start).toDate(),
-    //           endDate: moment(end).toDate(),
-    //         };
-    //         tempArray.push(temp);
-    //       }
-    //       setSchedule(tempArray);
-    //     } else {
-    //       setSchedule([]);
-    //     }
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   });
-  };
+  // const getTodaysLectures = (date) => {
+  //   // const data = {
+  //   //   batch: account.id,
+  //   //   division: account.id,
+  //   //   institute_id: user.employee.id,
+  //   //   day: daysOfWeek[new Date(date).getDay()],
+  //   //   startDate: moment(new Date(date))
+  //   //     .startOf("day")
+  //   //     .format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+  //   //   endDate: moment(new Date(date))
+  //   //     .endOf("day")
+  //   //     .format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+  //   // };
+  //   // setRange({
+  //   //   from: moment(new Date(date)).startOf("day").format("YYYY-MM-DD"),
+  //   //   to: moment(new Date(date)).endOf("day").format("YYYY-MM-DD"),
+  //   // });
+  //   const tempArray = [];
+  //   // post("/user/lectures", data)
+  //   //   .then((response) => {
+  //   //     if (response.data.errCode == -1) {
+  //   //       const dataset = response.data.data;
+  //   //       for (var i = 0; i < dataset.length; i++) {
+  //   //         const start =
+  //   //           moment(new Date(date)).format("YYYY-MM-DD") +
+  //   //           " " +
+  //   //           moment(dataset[i]["startTime"], "HHmm").format("HH:mm");
+  //   //         const end =
+  //   //           moment(new Date(date)).format("YYYY-MM-DD") +
+  //   //           " " +
+  //   //           moment(dataset[i]["endTime"], "HHmm").format("HH:mm");
+  //   //         const temp = {
+  //   //           index: i + 1,
+  //   //           subject: dataset[i]["subject"]["name"],
+  //   //           class: dataset[i]["class"]["alias"],
+  //   //           color: dataset[i]["subject"]["color"] || getRandomHexColor(),
+  //   //           room: dataset[i]["division"],
+  //   //           startDate: moment(start).toDate(),
+  //   //           endDate: moment(end).toDate(),
+  //   //         };
+  //   //         tempArray.push(temp);
+  //   //       }
+  //   //       setSchedule(tempArray);
+  //   //     } else {
+  //   //       setSchedule([]);
+  //   //     }
+  //   //   })
+  //   //   .catch((err) => {
+  //   //     console.log(err);
+  //   //   });
+  // };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // fetchStudentGrades();
+    fetchClassData();
+  }, []);
 
   const renderItem = ({ item }) => (
     <View
@@ -349,7 +435,7 @@ export default function StudentTimeTable({ navigation, route }) {
               fontSize: 14,
             }}
           >
-            {item.StartTime}
+            {item?.startTime}
           </Text>
           <Text
             style={{
@@ -358,12 +444,12 @@ export default function StudentTimeTable({ navigation, route }) {
               fontSize: 14,
             }}
           >
-            {item.EndTime}
+            {item?.endTime}
           </Text>
         </View>
         <Divider
           style={{
-            backgroundColor: getRandomHexColor(),
+            backgroundColor: item?.subject?.color,
             width: 2,
             height: "90%",
           }}
@@ -388,7 +474,7 @@ export default function StudentTimeTable({ navigation, route }) {
                 color: theme.primaryTextColor,
               }}
             >
-              {item.subjectName}
+              {item?.subject?.name}
             </Text>
           )}
         </View>
@@ -411,7 +497,11 @@ export default function StudentTimeTable({ navigation, route }) {
               //   <AvatarText>{item?.TeacherDetails?.TeacherName}</AvatarText>
               // </Avatar>
               <View>
-                <Text>No Image </Text>
+                <Avatar.Text
+                  size={24}
+                  label={item?.teacher?.name?.slice(0, 1)}
+                  theme={{ colors: { primary: "#007EB0" } }}
+                />
               </View>
             )}
           </View>
@@ -422,7 +512,7 @@ export default function StudentTimeTable({ navigation, route }) {
               fontFamily: "Poppins_500Medium",
             }}
           >
-            {item?.TeacherDetails?.TeacherName}
+            {item?.teacher?.name}
           </Text>
         </View>
       )}
@@ -455,11 +545,12 @@ export default function StudentTimeTable({ navigation, route }) {
               if (newDate.format("YYYY-MM") == moment().format("YYYY-MM")) {
                 setDate(newDate.format("DD"));
                 scrollToStart(parseInt(newDate.format("DD")) - 2);
-                getTodaysLectures(newDate);
+                // getTodaysLectures(newDate);
+                getTodaysLectureOnDayChange(newDate);
               } else {
                 setDate("01");
                 scrollToStart(parseInt("01") - 2);
-                getTodaysLectures(newDate.format("YYYY-MM-01"));
+                getTodaysLectureOnDayChange(newDate.format("YYYY-MM-01"));
               }
             }}
           >
@@ -492,11 +583,13 @@ export default function StudentTimeTable({ navigation, route }) {
               if (newDate.format("YYYY-MM") == moment().format("YYYY-MM")) {
                 setDate(newDate.format("DD"));
                 scrollToStart(parseInt(newDate.format("DD")) - 2);
-                getTodaysLectures(newDate);
+                // getTodaysLectures(newDate);
+                getTodaysLectureOnDayChange(newDate);
               } else {
                 setDate("01");
                 scrollToStart(parseInt("01") - 2);
-                getTodaysLectures(newDate.format("YYYY-MM-01"));
+                // getTodaysLectures(newDate.format("YYYY-MM-01"));
+                getTodaysLectureOnDayChange(newDate.format("YYYY-MM-01"));
               }
             }}
           >
@@ -521,7 +614,10 @@ export default function StudentTimeTable({ navigation, route }) {
                       onPress={() => {
                         setDate(item.date);
                         scrollToStart(parseInt(item.date) - 2);
-                        getTodaysLectures(year + "-" + month + "-" + item.date);
+                        // getTodaysLectures(year + "-" + month + "-" + item.date);
+                        getTodaysLectureOnDayChange(
+                          year + "-" + month + "-" + item.date
+                        );
                       }}
                       style={{
                         marginRight: 4,
@@ -580,16 +676,43 @@ export default function StudentTimeTable({ navigation, route }) {
           </View>
           <View />
 
-          <FlatList
-            data={lectureList}
-            renderItem={renderItem}
-            keyExtractor={(item, index) => {
-              index;
-            }}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }}></View>}
-            style={{ marginVertical: 30 }}
-            showsVerticalScrollIndicator={false}
-          />
+          <View>
+            {isLoading == true ? (
+              <View style={{ marginTop: 40 }}>
+                <ActivityIndicator size={"large"} />
+              </View>
+            ) : (
+              <FlatList
+                data={lectureList}
+                renderItem={renderItem}
+                keyExtractor={(item, index) => {
+                  index;
+                }}
+                ItemSeparatorComponent={() => (
+                  <View style={{ height: 10 }}></View>
+                )}
+                style={{ marginVertical: 30 }}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={() => (
+                  <View
+                    style={{
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 20,
+                    }}
+                  >
+                    <Text>No lectures available</Text>
+                  </View>
+                )}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                  />
+                }
+              />
+            )}
+          </View>
         </View>
       </View>
     </SafeAreaView>

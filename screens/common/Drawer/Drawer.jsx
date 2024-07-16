@@ -133,7 +133,7 @@ export default function CustomDrawer({ navigation }) {
           <DrawerRoutingcontent />
         </View>
       </View>
-      {userData != null && userData.password != "student" && (
+      {userData != null && userData?.role != "student" && (
         <View style={{ paddingLeft: 20, paddingRight: 20, marginBottom: 20 }}>
           <View
             style={{ backgroundColor: theme.backgroundColor, borderRadius: 8 }}

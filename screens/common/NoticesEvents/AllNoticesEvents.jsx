@@ -1,5 +1,7 @@
 import {
+  ActivityIndicator,
   BackHandler,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,12 +18,16 @@ import { Feather, Ionicons, Entypo } from "react-native-vector-icons";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { calculateDuration } from "../../../Helper/helper";
+import { get } from "../../../utils/apis/TeacherApis/login";
 
 export default function AllNoticesEvents({ allNoticesAndEvents }) {
   const { theme } = useThemeContext();
 
   const [details, setDetails] = useState();
   const [isDetailTabopen, setIsDetailTabOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [NoticesEvents, setNoticesEvents] = useState(allNoticesAndEvents);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigation = useNavigation();
 
@@ -57,27 +63,17 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
 
       headerRight: () => (
         <View style={{ marginRight: 10 }}>
-          {isDetailTabopen == true ? (
-            <TouchableOpacity
-              onPress={() => {
-                setIsDetailTabOpen(false);
-              }}
-            >
-              <Entypo name="cross" size={20} color={theme.secondaryTextColor} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => {
-                navigation.navigate("Notification");
-              }}
-            >
-              <Ionicons
-                name="notifications"
-                size={20}
-                color={theme.secondaryTextColor}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Notification");
+            }}
+          >
+            <Ionicons
+              name="notifications"
+              size={20}
+              color={theme.secondaryTextColor}
+            />
+          </TouchableOpacity>
         </View>
       ),
       headerStyle: {
@@ -86,37 +82,7 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
       headerTitleAlign: "center",
       headerTintColor: theme.backgroundColor,
     });
-  }, [navigation, isDetailTabopen,theme]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        setIsDetailTabOpen(false);
-        if (isDetailTabopen == true) {
-          setIsDetailTabOpen(false);
-          console.log(`back button pressed`);
-          return true;
-        }
-        console.log(`back button not pressed`);
-        return false;
-      };
-
-      const subscription = navigation.addListener("beforeRemove", (e) => {
-        if (onBackPress()) {
-          e.preventDefault();
-          console.log(`back button pressed from subscription`);
-        }
-      });
-      const backhandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress
-      );
-      return () => {
-        subscription();
-        backhandler.remove();
-      };
-    }, [isDetailTabopen])
-  );
+  }, [navigation, isDetailTabopen, theme]);
 
   function getRandomHexColor() {
     // Generate random color components with a minimum value to avoid too light colors
@@ -144,10 +110,48 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
     return hexColor;
   }
 
-  const handleEventPress = (item) => {
-    setDetails(item);
-    setIsDetailTabOpen(true);
+  const fetchNotices = async () => {
+    try {
+      setRefreshing(true);
+      setIsLoading(true);
+      const response = await get("event-notices/get");
+      console.log(`response`, response);
+
+      if (response?.errCode == -1) {
+        console.log(`response.data`, response?.data);
+        setNoticesEvents(response?.data);
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+        setNoticesEvents([]);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+
+    // const response = await get("events");
+    // console.log(`response.data `, response.data);
+    // setNoticesData(response.data);
+    // setIsLoading(false);
   };
+
+  const onRefresh = useCallback(() => {
+    // handleClassSelect(selectedClass?.value);
+    fetchNotices();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={{ width: "100%", height: "100%" }}>
+        <ActivityIndicator size={"large"} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -157,64 +161,72 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
         backgroundColor: theme.backgroundColor,
       }}
     >
-      {isDetailTabopen == true ? (
-        <ScrollView style={{ width: "100%" }}>
-          <View style={{ marginHorizontal: "auto", width: "90%" }}>
-            <View
-              style={[
-                {
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                  padding: 10,
-                  borderWidth: 2,
-                  borderRadius: 10,
-                  width: "100%",
-                },
-                { borderColor: `${getRandomHexColor()}` },
-              ]}
-            >
-              <View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "bold",
-                    color: theme.primaryTextColor,
-                    textAlign: "center",
-                  }}
-                >
-                  {details?.title}
-                </Text>
-              </View>
-              <View style={{ display: "flex", flexDirection: "row" }}>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "bold",
-                    color: theme.primaryTextColor,
-                  }}
-                >
-                  Venue:{" "}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "bold",
-                    color: theme.secondaryTextColor,
-                  }}
-                >
-                  {details?.venue}
-                </Text>
-              </View>
-              <View
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexDirection: "row",
-                  marginBottom: 20,
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginHorizontal: 20,
+          }}
+        >
+          {NoticesEvents?.length > 0 ? (
+            NoticesEvents?.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  {
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    padding: 10,
+                    borderWidth: 2,
+                    borderRadius: 10,
+                    margin: 10,
+                    width: "100%",
+                  },
+                  { borderColor: `${getRandomHexColor()}` },
+                ]}
+                onPress={() => {
+                  navigation.navigate("singleNotice", {
+                    item,
+                  });
                 }}
               >
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      color: theme.primaryTextColor,
+                    }}
+                  >
+                    {item?.title}
+                  </Text>
+                </View>
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      color: theme.primaryTextColor,
+                    }}
+                  >
+                    Venue:{" "}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      color: theme.secondaryTextColor,
+                    }}
+                  >
+                    {item?.venue}
+                  </Text>
+                </View>
                 <View
                   style={{
                     display: "flex",
@@ -229,7 +241,7 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
                     color={theme.primarycolor}
                   />
                   <Text style={{ color: theme.primaryTextColor }}>
-                    {moment(details?.date).format("Do MMMM YYYY")}
+                    {moment(item?.date).format("Do MMMM YYYY")}
                   </Text>
                 </View>
                 <View
@@ -246,157 +258,36 @@ export default function AllNoticesEvents({ allNoticesAndEvents }) {
                     color={theme.primarycolor}
                   />
                   <Text style={{ color: theme.primaryTextColor }}>
-                    {calculateDuration(details?.startTime, details?.endTime)}
+                    {calculateDuration(item?.startTime, item?.endTime)}
                   </Text>
                 </View>
-              </View>
-            </View>
-          </View>
-          <View style={{ margin: 20, gap: 20 }}>
-            <Text
-              style={{
-                color: theme.primaryTextColor,
-                fontSize: 14,
-                fontWeight: "500",
-              }}
-            >
-              Details :
-            </Text>
+              </TouchableOpacity>
+            ))
+          ) : (
             <View
               style={{
-                marginHorizontal: "auto",
-                color: theme.ternaryTextColor,
-                fontSize: 12,
-                fontWeight: "400",
+                width: 300,
+                height: 100,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              <Text>{details?.description}</Text>
-            </View>
-          </View>
-        </ScrollView>
-      ) : (
-        <ScrollView>
-          <View
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginHorizontal: 20,
-            }}
-          >
-            {allNoticesAndEvents.length > 0 ? (
-              allNoticesAndEvents.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    {
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      padding: 10,
-                      borderWidth: 2,
-                      borderRadius: 10,
-                      margin: 10,
-                      width: "100%",
-                    },
-                    { borderColor: `${getRandomHexColor()}` },
-                  ]}
-                  onPress={() => {
-                    handleEventPress(item);
-                  }}
-                >
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        color: theme.primaryTextColor,
-                      }}
-                    >
-                      {item?.title}
-                    </Text>
-                  </View>
-                  <View style={{ display: "flex", flexDirection: "row" }}>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        color: theme.primaryTextColor,
-                      }}
-                    >
-                      Venue:{" "}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        color: theme.secondaryTextColor,
-                      }}
-                    >
-                      {item?.venue}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 5,
-                    }}
-                  >
-                    <FontAwesome
-                      name="table"
-                      size={20}
-                      color={theme.primarycolor}
-                    />
-                    <Text style={{ color: theme.primaryTextColor }}>
-                      {moment(item?.date).format("Do MMMM YYYY")}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 5,
-                    }}
-                  >
-                    <FontAwesome
-                      name="clock-o"
-                      size={20}
-                      color={theme.primarycolor}
-                    />
-                    <Text style={{ color: theme.primaryTextColor }}>
-                      {calculateDuration(item?.startTime, item?.endTime)}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View
+              <Text
                 style={{
-                  width: 300,
-                  height: 100,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  textAlign: "center",
+                  fontStyle: "italic",
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  color: theme.secondaryTextColor,
                 }}
               >
-                <Text
-                  style={{
-                    textAlign: "center",
-                    fontStyle: "italic",
-                    fontSize: 20,
-                    fontWeight: "bold",
-                    color: theme.secondaryTextColor,
-                  }}
-                >
-                  No Notices and Events
-                </Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      )}
+                No Notices and Events
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

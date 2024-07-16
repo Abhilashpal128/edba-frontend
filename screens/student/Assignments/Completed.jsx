@@ -1,4 +1,11 @@
-import { useEffect, useRef, useLayoutEffect, useState, useMemo } from "react";
+import {
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   SafeAreaView,
   View,
@@ -8,6 +15,7 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
 } from "react-native";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import { useTheme, Avatar, Divider } from "react-native-paper";
@@ -15,10 +23,31 @@ import { useTheme, Avatar, Divider } from "react-native-paper";
 import { Entypo } from "react-native-vector-icons";
 import { Subjects } from "../../../svg/subjects";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { useSelector } from "react-redux";
+import { useIsFocused } from "@react-navigation/native";
+import { post } from "../../../utils/apis/StudentApis";
+import SvgRenderer from "./SvgRenderer";
+import {
+  AssignmentShimmerEffect,
+  SubjectShimmerEffect,
+} from "./AssignmentShimmerEffect";
 
 export default function Completed({ navigation, route }) {
+  const userData = useSelector((state) => state?.login?.user);
+  console.log(`userdata`, userData);
+  const StudentId = userData?.studentId;
   const { colors } = useTheme();
   const { theme } = useThemeContext();
+  const isFocused = useIsFocused();
+  const subjectData = route?.params?.item;
+  console.log(subjectData);
+  console.log(`subjectData != undefined`, subjectData != undefined);
+  const [isSubjectLoading, setIsSubjectLoading] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [subjectSelectedRedirect, setSubjectSelectedRedirect] = useState(
+    subjectData != undefined
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
   const [subjects, setSubjects] = useState([
     {
@@ -58,72 +87,7 @@ export default function Completed({ navigation, route }) {
     },
   ]);
 
-  const [assignment, setAssignments] = useState([
-    {
-      question: "Make a assignment on substance pressure.",
-      fileName: "Assignment.pdf",
-      instructions: [
-        {
-          description:
-            " 1 Research and create a presentation on the structure and functions of plant and animal cells",
-        },
-        {
-          description:
-            " 2. Include labeled diagrams and explanations of organelles.",
-        },
-        {
-          description:
-            " 3. Submit your presentation through the app by [insertdeadline].",
-        },
-      ],
-      resources: [
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-      ],
-    },
-    {
-      question: "Solve your questions and answers on page 26.",
-      fileName: "Assignment.pdf",
-      instructions: [
-        {
-          description:
-            " 1 Research and create a presentation on the structure and functions of plant and animal cells",
-        },
-        {
-          description:
-            " 2. Include labeled diagrams and explanations of organelles.",
-        },
-        {
-          description:
-            " 3. Submit your presentation through the app by [insertdeadline].",
-        },
-      ],
-      resources: [
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-      ],
-    },
-  ]);
+  const [assignment, setAssignments] = useState([]);
 
   const [activeTab, setActiveTab] = useState(0);
 
@@ -148,101 +112,221 @@ export default function Completed({ navigation, route }) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  const fetchSubjectList = async () => {
+    try {
+      setIsSubjectLoading(true);
+      const response = await post("classes/student-subject", {
+        studentId: StudentId,
+      });
+      if (response?.errCode == -1) {
+        setSubjects(response?.data);
+        setIsSubjectLoading(false);
+      } else {
+        setSubjects([]);
+        setIsSubjectLoading(false);
+      }
+    } catch (error) {
+      console.log(`error while fetching subjectList`, error);
+      setIsSubjectLoading(false);
+    } finally {
+      setIsSubjectLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const fetchCompletedAssignments = async () => {
+    try {
+      setLoading(true);
+      const response = await post("assignments/complete-student", {
+        studentId: StudentId,
+      });
+      console.log(`Completed Assignments`, response);
+      if (response?.errCode == -1) {
+        setAssignments(response?.data);
+      } else if (response?.errCode == 1) {
+        setLoading(false);
+        Alert.alert(response?.message);
+      } else {
+        setLoading(false);
+        setAssignments([]);
+      }
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
+    }
+  };
+  const handleSubjectSelect = async (subjectId) => {
+    try {
+      setActiveTab(subjectId);
+      const response = await post(`assignments/complete-student`, {
+        studentId: StudentId,
+        subjectId: subjectId,
+      });
+
+      console.log(`subject wise Assignment`, response);
+      if (response?.errCode == -1) {
+        setAssignments(response?.data);
+      } else {
+        setAssignments([]);
+      }
+    } catch (error) {
+      console.log(`error from handleSubjectSelect`, error);
+    }
+  };
+
+  useEffect(() => {
+    if (subjectSelectedRedirect) {
+      console.log(`subjectDatata`, subjectData);
+      console.log(`subjectData?.id`, subjectData?.id);
+      handleSubjectSelect(subjectData?.id);
+    }
+  }, [subjectSelectedRedirect, subjectData]); // Add dependencies to run when these values change
+
+  // Effect that runs when subjectSelectedRedirect is false
+  useEffect(() => {
+    if (!subjectSelectedRedirect) {
+      fetchCompletedAssignments();
+    }
+  }, [subjectSelectedRedirect]);
+
+  useEffect(() => {
+    fetchSubjectList();
+  }, []);
+
+  useEffect(() => {
+    fetchSubjectList();
+    fetchCompletedAssignments();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchCompletedAssignments();
+    fetchSubjectList();
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
-      <View style={{ marginTop: 10 }}>
+      <ScrollView
+        style={{ marginTop: 10 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <ScrollView showsHorizontalScrollIndicator={false} horizontal={true}>
-          {subjects.map((item, index) => {
-            return (
-              <TouchableOpacity
-                onPress={() => setActiveTab(index)}
-                key={index}
-                style={{
-                  width: 100,
-                  height: 75,
-                  backgroundColor: hexToRgba(item.color, 0.15),
-                  marginRight: 10,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderColor: item.color,
-                  borderWidth: index == activeTab ? 1 : 0,
-                }}
-              >
-                {(() => {
-                  if (Subjects[item.slug]) {
-                    return <View>{Subjects[item.slug]()}</View>;
-                  }
-                })()}
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontSize: 14,
-                    marginTop: 6,
-                  }}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        <View style={{ marginVertical: 20 }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 16,
-              fontWeight: "bold",
-              marginTop: 6,
-              color: theme.primaryTextColor,
-              marginVertical: 20,
-            }}
-          >
-            List of Assignments
-          </Text>
-          <ScrollView
-            style={{ marginTop: 10 }}
-            showsVerticalScrollIndicator={true}
-          >
-            {assignment.map((item, index) => {
-              return (
-                <View key={index} style={{ marginVertical: 10 }}>
+          {isSubjectLoading == true ? (
+            <SubjectShimmerEffect />
+          ) : (
+            <ScrollView
+              showsHorizontalScrollIndicator={false}
+              horizontal={true}
+            >
+              {subjects?.map((item, index) => {
+                return (
                   <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("CompletedAssignment", {
-                        subject: subjects[activeTab],
-                        assignment: item,
-                      })
-                    }
+                    onPress={() => handleSubjectSelect(item?.id)}
+                    key={index}
                     style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      width: "90%",
+                      width: 100,
+                      height: 75,
+                      backgroundColor: hexToRgba(`${item?.colorCode}`, 0.15),
+                      marginRight: 10,
+                      borderRadius: 8,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderColor: item.color,
+                      borderWidth: item?.id == activeTab ? 1 : 0,
                     }}
                   >
+                    {(() => {
+                      if (Subjects[item?.slug]) {
+                        return <View>{Subjects[item?.slug]()}</View>;
+                      }
+                    })()}
+                    {/* {item?.svg != null && (
+                      <SvgRenderer svgContent={`${item.svg}`} />
+                    )} */}
                     <Text
+                      numberOfLines={1}
                       style={{
-                        fontSize: 12,
-                        fontWeight: "semibold",
-                        width: "90%",
-                        color: theme.primarycolor,
+                        fontSize: 14,
+                        marginTop: 6,
                       }}
                     >
-                      {item.question}
+                      {item?.subjectName}
                     </Text>
-                    <Entypo
-                      name="chevron-right"
-                      size={20}
-                      color={theme.primarycolor}
-                    />
                   </TouchableOpacity>
-                  <Divider style={{ marginTop: 10, marginBottom: 10 }} />
-                </View>
-              );
-            })}
-          </ScrollView>
+                );
+              })}
+            </ScrollView>
+          )}
+        </ScrollView>
+        <View style={{ marginVertical: 20 }}>
+          {isLoading == true ? (
+            <View>
+              <AssignmentShimmerEffect />
+            </View>
+          ) : (
+            <View>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginTop: 6,
+                  color: theme.primaryTextColor,
+                  marginVertical: 20,
+                }}
+              >
+                List of Assignments
+              </Text>
+              <ScrollView
+                style={{ marginTop: 10 }}
+                showsVerticalScrollIndicator={true}
+              >
+                {assignment?.map((item, index) => {
+                  return (
+                    <View key={index} style={{ marginVertical: 10 }}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("CompletedAssignment", {
+                            subject: subjects[activeTab],
+                            item,
+                          })
+                        }
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          width: "90%",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            width: "90%",
+                            color: theme.primarycolor,
+                          }}
+                        >
+                          {item?.assignment?.name}
+                        </Text>
+                        <Entypo
+                          name="chevron-right"
+                          size={20}
+                          color={theme.primarycolor}
+                        />
+                      </TouchableOpacity>
+                      <Divider style={{ marginTop: 10, marginBottom: 10 }} />
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

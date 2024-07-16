@@ -46,8 +46,6 @@ export default function AssignmentShimmer() {
             visible={isLoading}
             shimmerColors={["#a9a9a9", "#d3d3d3", "#a9a9a9"]}
           /> */}
-
-      <Text>Hii</Text>
     </View>
   );
 }

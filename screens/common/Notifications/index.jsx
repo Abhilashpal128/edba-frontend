@@ -179,7 +179,7 @@ export default function Notification() {
         height: "100%",
       }}
     >
-      <View style={{ marginHorizontal: 20 , marginTop:10 }}>
+      <View style={{ marginHorizontal: 20, marginTop: 10 }}>
         {notifications.length > 0 ? (
           <View>
             <FlatList

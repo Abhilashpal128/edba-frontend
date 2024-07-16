@@ -60,7 +60,7 @@ export default function NoticesAndEvents({ navigation, route }) {
   const [eventsNotices, setEventsNotices] = useState([]);
 
   useState(() => {
-    setEventsNotices(route.params.Events);
+    setEventsNotices(route?.params?.Events);
     console.log(`routetetet`, typeof route.params);
     console.log(`routetetet`, route.params.Events);
   }, []);

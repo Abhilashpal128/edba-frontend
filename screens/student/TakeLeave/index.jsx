@@ -1,19 +1,23 @@
 import {
   Alert,
+  RefreshControl,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useLayoutEffect, useState } from "react";
+import React, { useCallback, useLayoutEffect, useState } from "react";
 import { useThemeContext } from "../../../hooks/useTheme";
 import moment from "moment/moment";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome6, Feather, Ionicons } from "react-native-vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "react-native-paper";
+import { post } from "../../../utils/apis/StudentApis";
+import { useSelector } from "react-redux";
 
 export default function StudentTakeLeave() {
   const navigation = useNavigation();
@@ -27,74 +31,74 @@ export default function StudentTakeLeave() {
     useState(false);
   const [isEndDatePickerVisible, setIsEndDatePickerVisible] = useState(false);
   const [minimumEndDate, setMinimumEndDate] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [reason, setReason] = useState(null);
+  const [reasonError, setreasonError] = useState(false);
   const { colors } = useTheme();
+  const userData = useSelector((state) => state?.login?.user);
+  const studentId = userData?.studentId;
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      header: () => {
-        return (
-          <View
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          style={{ marginLeft: 20 }}
+        >
+          <Ionicons name="menu" size={25} color={theme.secondaryTextColor} />
+        </TouchableOpacity>
+      ),
+
+      headerTitle: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            numberOfLines={1}
             style={{
-              paddingLeft: 20,
-              paddingRight: 20,
-              paddingTop: 20,
-              paddingBottom: 10,
-              backgroundColor: theme.backgroundColor,
+              fontSize: 16,
+              marginLeft: 10,
+              color: theme.primaryTextColor,
+              fontWeight: "bold",
+              fontFamily: "Poppins_600SemiBold",
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginTop: 40,
-              }}
-            >
-              <TouchableOpacity onPress={() => navigation.openDrawer()}>
-                <Ionicons
-                  name="menu"
-                  size={25}
-                  color={theme.secondaryTextColor}
-                />
-              </TouchableOpacity>
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: 16,
-                  marginLeft: 10,
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
-                  fontFamily: "Poppins_600SemiBold",
-                }}
-              >
-                Take Leave
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  width: "20%",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate("Notification");
-                  }}
-                >
-                  <Feather
-                    name="bell"
-                    size={20}
-                    color={theme.secondaryTextColor}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        );
+            Take Leave
+          </Text>
+        </View>
+      ),
+
+      headerRight: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            justifyContent: "flex-end",
+            marginRight: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Notification");
+            }}
+          >
+            <Feather name="bell" size={20} color={theme.secondaryTextColor} />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerStyle: {
+        backgroundColor: theme.backgroundColor,
       },
+      headerTitleAlign: "center", // Adjust alignment for header title (if needed)
+      headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   const hexToRgba = (hex, opacity) => {
     hex = hex.replace("#", "");
@@ -137,241 +141,299 @@ export default function StudentTakeLeave() {
     setIsEndDatePickerVisible(false);
   };
 
+  const handleSubmitLeave = async () => {
+    try {
+      if (reason == null) {
+        setreasonError(true);
+        return;
+      }
+
+      const response = await post("leave/create", {
+        studentId: studentId,
+        startDate: startDate,
+        endDate: EndDate,
+        reason: reason,
+      });
+
+      if (response?.errCode == -1) {
+        Alert.alert("Leave Approved successfully");
+        navigation.navigate("StudentHome");
+      } else {
+        Alert.alert("error while Approving Leave");
+      }
+      console.log(`response from Leave `, response);
+    } catch (error) {
+      console.log(`error from handleSubmitLeave`, error);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setStartdate(Today);
+    setEndDate(Today);
+    setReason(null);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 500);
+  }, []);
+
   return (
     <SafeAreaView
       style={{ backgroundColor: theme.backgroundColor, height: "100%" }}
     >
-      <View
-        style={{
-          marginHorizontal: 20,
-          display: "flex",
-          justifyContent: "space-between",
-          height: "90%",
-        }}
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        style={{ height: "100%" }}
       >
-        <View>
-          <View
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-evenly",
-              alignItems: "center",
-              gap: 20,
-              marginVertical: 20,
-              width: "100%",
-            }}
-          >
-            <TouchableOpacity
+        <View
+          style={{
+            marginHorizontal: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            height: "90%",
+          }}
+        >
+          <View>
+            <View
               style={{
-                height: 70,
-                borderColor: theme.primarycolor,
-                borderWidth: 1,
-                width: "30%",
-                borderRadius: 8,
                 display: "flex",
-                justifyContent: "center",
+                flexDirection: "row",
+                justifyContent: "space-evenly",
                 alignItems: "center",
-                backgroundColor: hexToRgba(theme.primarycolor, 0.15),
-              }}
-              onPress={() => {
-                setStartdate(Today);
-                setEndDate(Today);
+                gap: 20,
+                marginVertical: 20,
+                width: "100%",
               }}
             >
-              <Text
+              <TouchableOpacity
                 style={{
-                  color: theme.primaryTextColor,
-                  fontSize: 14,
-                  fontWeight: "500",
+                  height: 70,
+                  borderColor: theme.primarycolor,
+                  borderWidth: 1,
+                  width: "30%",
+                  borderRadius: 8,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: hexToRgba(theme.primarycolor, 0.15),
+                }}
+                onPress={() => {
+                  setStartdate(Today);
+                  setEndDate(Today);
                 }}
               >
-                Today
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                height: 70,
-                borderColor: theme.primarycolor,
-                borderWidth: 1,
-                width: "30%",
-                borderRadius: 8,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: hexToRgba(theme.primarycolor, 0.15),
-              }}
-              onPress={() => {
-                const Tommorow = moment(Today)
-                  .add(1, "days")
-                  .format("YYYY-MM-DD");
+                <Text
+                  style={{
+                    color: theme.primaryTextColor,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  Today
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  height: 70,
+                  borderColor: theme.primarycolor,
+                  borderWidth: 1,
+                  width: "30%",
+                  borderRadius: 8,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: hexToRgba(theme.primarycolor, 0.15),
+                }}
+                onPress={() => {
+                  const Tommorow = moment(Today)
+                    .add(1, "days")
+                    .format("YYYY-MM-DD");
 
-                setStartdate(Tommorow);
-                setEndDate(Tommorow);
-              }}
-            >
-              <Text
-                style={{
-                  color: theme.primaryTextColor,
-                  fontSize: 14,
-                  fontWeight: "500",
+                  setStartdate(Tommorow);
+                  setEndDate(Tommorow);
                 }}
               >
-                Tommorow
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={{
+                    color: theme.primaryTextColor,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  Tommorow
+                </Text>
+              </TouchableOpacity>
+              <View
+                style={{
+                  height: 70,
+                  borderColor: theme.primarycolor,
+                  borderWidth: 1,
+                  width: "30%",
+                  borderRadius: 8,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: hexToRgba(theme.primarycolor, 0.15),
+                }}
+              >
+                <Text
+                  style={{
+                    color: theme.primaryTextColor,
+                    fontSize: 14,
+                    fontWeight: "500",
+                  }}
+                >
+                  Select dates
+                </Text>
+              </View>
+            </View>
             <View
               style={{
                 height: 70,
-                borderColor: theme.primarycolor,
-                borderWidth: 1,
-                width: "30%",
-                borderRadius: 8,
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  width: "40%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "flex-start",
+                  paddingLeft: 5,
+                }}
+                onPress={() => {
+                  setIsStartDatePickerVisible(true);
+                }}
+              >
+                <Text
+                  style={{
+                    color: theme.primaryTextColor,
+                    fontWeight: "bold",
+                    fontSize: 14,
+                  }}
+                >
+                  start Date
+                </Text>
+                <Text
+                  style={{
+                    color: theme.primarycolor,
+                    fontWeight: "semibold",
+                    fontSize: 12,
+                  }}
+                  x
+                >
+                  {moment(startDate).format("DD MMMM")}
+                </Text>
+              </TouchableOpacity>
+              <View style={{ width: "20%" }}>
+                <Text
+                  style={{
+                    color: theme.primarycolor,
+                    fontWeight: "semibold",
+                    fontSize: 12,
+                  }}
+                >
+                  {moment(EndDate).diff(moment(startDate), "days") > 0
+                    ? `${moment(EndDate).diff(moment(startDate), "days")} days`
+                    : `1 day`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={{
+                  width: "40%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "flex-end",
+                  paddingRight: 5,
+                }}
+                onPress={() => {
+                  setIsEndDatePickerVisible(true);
+                }}
+              >
+                <Text
+                  style={{
+                    color: theme.primaryTextColor,
+                    fontWeight: "bold",
+                    fontSize: 14,
+                  }}
+                >
+                  End Date
+                </Text>
+                <Text
+                  style={{
+                    color: theme.primarycolor,
+                    fontWeight: "semibold",
+                    fontSize: 12,
+                  }}
+                >
+                  {moment(EndDate).format("DD MMMM")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ borderBottomWidth: 1, borderBottomColor: "#ccc" }}>
+              <Text
+                style={{ color: theme.primaryTextColor, paddingVertical: 10 }}
+              >
+                Reason for Leave{" "}
+              </Text>
+            </View>
+            <TextInput
+              numberOfLines={4}
+              multiline={true}
+              value={reason}
+              style={{
+                borderBottomWidth: 1,
+                borderBottomColor: "#ccc",
+                minHeight: 100,
+                textAlignVertical: "top",
+                paddingTop: 10,
+              }}
+              onChangeText={(text) => {
+                setReason(text);
+                setreasonError(false);
+              }}
+              placeholder="Ex: Need to attend family function."
+              placeholderTextColor={theme?.secondaryTextColor}
+            />
+            {reasonError && (
+              <Text style={{ color: "red", fontSize: 14 }}>
+                This feild is required
+              </Text>
+            )}
+          </View>
+          <View>
+            <TouchableOpacity
+              style={{
+                marginTop: 40,
+                height: 40,
+                backgroundColor: theme.primarycolor,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                backgroundColor: hexToRgba(theme.primarycolor, 0.15),
-              }}
-            >
-              <Text
-                style={{
-                  color: theme.primaryTextColor,
-                  fontSize: 14,
-                  fontWeight: "500",
-                }}
-              >
-                Select dates
-              </Text>
-            </View>
-          </View>
-          <View
-            style={{
-              height: 70,
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <TouchableOpacity
-              style={{
-                width: "40%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                paddingLeft: 5,
+                borderRadius: 5,
               }}
               onPress={() => {
-                setIsStartDatePickerVisible(true);
+                handleSubmitLeave();
               }}
             >
               <Text
                 style={{
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
+                  color: "#FFFFFF",
                   fontSize: 14,
-                }}
-              >
-                start Date
-              </Text>
-              <Text
-                style={{
-                  color: theme.primarycolor,
                   fontWeight: "semibold",
-                  fontSize: 12,
-                }}
-                x
-              >
-                {moment(startDate).format("DD MMMM")}
-              </Text>
-            </TouchableOpacity>
-            <View style={{ width: "20%" }}>
-              <Text
-                style={{
-                  color: theme.primarycolor,
-                  fontWeight: "semibold",
-                  fontSize: 12,
                 }}
               >
-                {moment(EndDate).diff(moment(startDate), "days") > 0
-                  ? `${moment(EndDate).diff(moment(startDate), "days")} days`
-                  : `1 day`}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={{
-                width: "40%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-end",
-                paddingRight: 5,
-              }}
-              onPress={() => {
-                setIsEndDatePickerVisible(true);
-              }}
-            >
-              <Text
-                style={{
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
-                  fontSize: 14,
-                }}
-              >
-                End Date
-              </Text>
-              <Text
-                style={{
-                  color: theme.primarycolor,
-                  fontWeight: "semibold",
-                  fontSize: 12,
-                }}
-              >
-                {moment(EndDate).format("DD MMMM")}
+                TAKE LEAVE
               </Text>
             </TouchableOpacity>
           </View>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: "#ccc" }}>
-            <Text
-              style={{ color: theme.primaryTextColor, paddingVertical: 10 }}
-            >
-              Reason for Leave{" "}
-            </Text>
-          </View>
-          <TextInput
-            numberOfLines={4}
-            multiline={true}
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: "#ccc",
-              minHeight: 100,
-              textAlignVertical: "top",
-              paddingTop: 10,
-            }}
-            placeholder="Ex: Need to attend family function."
-            placeholderTextColor={theme?.secondaryTextColor}
-          />
         </View>
-        <View>
-          <TouchableOpacity
-            style={{
-              height: 40,
-              backgroundColor: theme.primarycolor,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 5,
-            }}
-            onPress={() => {
-              Alert.alert(Today);
-            }}
-          >
-            <Text
-              style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "semibold" }}
-            >
-              TAKE LEAVE
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </ScrollView>
 
       <DateTimePickerModal
         isVisible={isStartDatePickerVisible}

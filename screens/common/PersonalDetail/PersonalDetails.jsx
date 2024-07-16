@@ -71,7 +71,7 @@ export default function PersonalDetails({ personalDetails }) {
     // >
     //   <FlatList data={data} renderItem={renderItem} />
     // </View>
-    
+
     <ScrollView
       style={{
         backgroundColor: theme.backgroundColor,
@@ -79,7 +79,6 @@ export default function PersonalDetails({ personalDetails }) {
         marginVertical: 20,
       }}
     >
-      
       {personalDetails?.details !== undefined &&
         Object.entries(personalDetails?.details).map(([key, value]) => (
           <View key={key}>

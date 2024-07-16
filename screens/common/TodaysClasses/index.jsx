@@ -4,12 +4,9 @@ import TodaysClassesShimmer from "./TodaysClassesShimmer";
 import { useThemeContext } from "../../../hooks/useTheme";
 // import { theme } from "../../../theming";
 
-export default function TodaysClasses({
-  TodaysClassesData,
-  isLoading,
-  setIsLoading,
-}) {
+export default function TodaysClasses({ TodaysClassesData }) {
   const { theme } = useThemeContext();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setTimeout(() => {
@@ -88,6 +85,15 @@ export default function TodaysClasses({
                       }}
                     >
                       Class: {item?.class?.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        flexWrap: "wrap",
+                        color: theme.primaryTextColor,
+                      }}
+                    >
+                      Subject: {item?.subject?.name}
                     </Text>
                     <Text
                       style={{

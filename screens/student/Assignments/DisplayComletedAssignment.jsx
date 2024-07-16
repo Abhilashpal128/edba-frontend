@@ -1,4 +1,5 @@
 import {
+  Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -8,90 +9,172 @@ import {
 } from "react-native";
 import { Svg, Circle, Text as SvgText, Path } from "react-native-svg";
 import { useTheme, Avatar, Divider, Button } from "react-native-paper";
-import React, { useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { Ionicons } from "react-native-vector-icons";
 import { Subjects } from "../../../svg/subjects";
+import { post } from "../../../utils/apis/StudentApis";
+import SvgRenderer from "./SvgRenderer";
 
 export default function DisplayComletedAssignment({ navigation, route }) {
   const params = route.params;
+  console.log(`params`, params?.item?.assignment);
+  console.log(`paramsdocumentLink`, params?.item);
+
   const { theme } = useThemeContext();
+  const [teacherDetails, setTeacherDetails] = useState(null);
   useLayoutEffect(() => {
+    // navigation.setOptions({
+    //   header: () => {
+    //     return (
+    //       <View
+    //         style={{
+    //           flexDirection: "row",
+    //           alignItems: "center",
+    //           justifyContent: "space-between",
+    //           paddingLeft: 20,
+    //           paddingRight: 20,
+    //           paddingTop: 20,
+    //           paddingBottom: 10,
+    //         }}
+    //       >
+    //         <TouchableOpacity
+    //           onPress={() => {
+    //             navigation.goBack();
+    //           }}
+    //           style={{
+    //             flexDirection: "row",
+    //             alignItems: "center",
+    //             width: "20%",
+    //           }}
+    //         >
+    //           <FontAwesome6
+    //             name="chevron-left"
+    //             size={20}
+    //             color={theme.secondaryTextColor}
+    //           />
+    //         </TouchableOpacity>
+    //         <View
+    //           style={{
+    //             flexDirection: "row",
+    //             alignItems: "center",
+    //             justifyContent: "center",
+    //           }}
+    //         >
+    //           {params?.subject?.svg !== null && (
+    //             <SvgRenderer svgContent={`${params?.subject?.svg}`} />
+    //           )}
+    //           <Text
+    //             style={{
+    //               fontSize: 16,
+    //               marginLeft: 10,
+    //               color: theme.primaryTextColor,
+    //               fontWeight: "bold",
+    //             }}
+    //           >
+    //             {params?.subject?.subjectName}
+    //           </Text>
+    //         </View>
+    //         <View
+    //           style={{
+    //             flexDirection: "row",
+    //             alignItems: "center",
+    //             width: "20%",
+    //             justifyContent: "flex-end",
+    //           }}
+    //         >
+    //           <TouchableOpacity
+    //             onPress={() => {
+    //               navigation.navigate("Notification");
+    //             }}
+    //           >
+    //             <Ionicons
+    //               name="notifications"
+    //               size={20}
+    //               color={theme.secondaryTextColor}
+    //             />
+    //           </TouchableOpacity>
+    //         </View>
+    //       </View>
+    //     );
+    //   },
+    // });
     navigation.setOptions({
-      header: () => {
-        return (
-          <View
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            marginLeft: 20,
+          }}
+        >
+          <FontAwesome6
+            name="chevron-left"
+            size={20}
+            color={theme.secondaryTextColor}
+          />
+        </TouchableOpacity>
+      ),
+
+      headerTitle: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {params?.subject?.svg !== null && (
+            <SvgRenderer svgContent={`${params?.subject?.svg}`} />
+          )}
+          <Text
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingLeft: 20,
-              paddingRight: 20,
-              paddingTop: 20,
-              paddingBottom: 10,
+              fontSize: 16,
+              marginLeft: 10,
+              color: theme.primaryTextColor,
+              fontWeight: "bold",
             }}
           >
-            <TouchableOpacity
-              onPress={() => {
-                navigation.goBack();
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "20%",
-              }}
-            >
-              <FontAwesome6
-                name="chevron-left"
-                size={20}
-                color={theme.secondaryTextColor}
-              />
-            </TouchableOpacity>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {Subjects[params.subject.slug]()}
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginLeft: 10,
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
-                }}
-              >
-                {params.subject.label}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "20%",
-                justifyContent: "flex-end",
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  navigation.navigate("Notification");
-                }}
-              >
-                <Ionicons
-                  name="notifications"
-                  size={20}
-                  color={theme.secondaryTextColor}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
+            {params.subject.subjectName}
+          </Text>
+        </View>
+      ),
+
+      headerRight: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            justifyContent: "flex-end",
+            marginRight: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Notification");
+            }}
+          >
+            <Ionicons
+              name="notifications"
+              size={20}
+              color={theme.secondaryTextColor}
+            />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerStyle: {
+        backgroundColor: theme.backgroundColor,
       },
+      headerTitleAlign: "center", // Adjust alignment for header title (if needed)
+      headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation, params,theme]);
+  }, [navigation, params, theme]);
 
   const hexToRgba = (hex, opacity) => {
     hex = hex.replace("#", "");
@@ -113,8 +196,28 @@ export default function DisplayComletedAssignment({ navigation, route }) {
 
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
+
+  const fetchTetacherDetails = async (teacherId) => {
+    try {
+      const response = await post("teacher/limited-details", {
+        id: teacherId,
+      });
+      // console.log(response);
+      if (response?.errCode == -1) {
+        setTeacherDetails(response?.data);
+      } else {
+        setTeacherDetails(null);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTetacherDetails(params?.item?.assignment?.teacher?.id);
+  }, []);
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
       <View style={{ padding: 20, flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View
@@ -211,41 +314,45 @@ export default function DisplayComletedAssignment({ navigation, route }) {
                     fontWeight: "bold",
                   }}
                 >
-                  {params?.assignment?.question}
+                  {params?.item?.assignment?.name}
                 </Text>
                 <View style={{ marginTop: 10 }}>
-                  <Text
-                    style={{
-                      marginTop: 10,
-                      fontSize: 12,
-                      fontWeight: "semibold",
-                      color: theme.secondaryTextColor,
-                    }}
-                  >
-                    Created By
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginTop: 8,
-                    }}
-                  >
-                    <Avatar.Text
-                      size={24}
-                      label={"EP"}
-                      theme={{ colors: { primary: "#007EB0" } }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: theme.secondaryTextColor,
-                        marginLeft: 6,
-                      }}
-                    >
-                      Elliana Palacios
-                    </Text>
-                  </View>
+                  {teacherDetails !== null && (
+                    <View>
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 12,
+                          fontWeight: "semibold",
+                          color: theme.secondaryTextColor,
+                        }}
+                      >
+                        Created By
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 8,
+                        }}
+                      >
+                        <Avatar.Text
+                          size={24}
+                          label={teacherDetails?.name?.slice(0, 1)}
+                          theme={{ colors: { primary: "#007EB0" } }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: theme.secondaryTextColor,
+                            marginLeft: 6,
+                          }}
+                        >
+                          {teacherDetails?.name}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                   <Divider style={{ marginTop: 10, marginBottom: 10 }} />
                   <View style={{ marginBottom: 10 }}>
                     <Text
@@ -258,20 +365,22 @@ export default function DisplayComletedAssignment({ navigation, route }) {
                     >
                       Instructions:
                     </Text>
-                    {params?.assignment?.instructions?.length > 0 ? (
+                    {params?.item?.assignment?.instructions?.length > 0 ? (
                       <View>
-                        {params?.assignment?.instructions.map((item, index) => (
-                          <Text
-                            style={{
-                              marginTop: 10,
-                              fontSize: 12,
-                              color: theme.secondaryTextColor,
-                            }}
-                            key={index}
-                          >
-                            {item.description}
-                          </Text>
-                        ))}
+                        {params?.item?.assignment?.instructions.map(
+                          (item, index) => (
+                            <Text
+                              style={{
+                                marginTop: 10,
+                                fontSize: 12,
+                                color: theme.secondaryTextColor,
+                              }}
+                              key={index}
+                            >
+                              {item}
+                            </Text>
+                          )
+                        )}
                       </View>
                     ) : (
                       <View>
@@ -297,30 +406,32 @@ export default function DisplayComletedAssignment({ navigation, route }) {
                     >
                       Resources:
                     </Text>
-                    {params?.assignment?.resources?.length > 0 ? (
+                    {params?.item?.assignment?.resources?.length > 0 ? (
                       <View>
-                        {params?.assignment?.resources.map((item, index) => (
-                          <View key={index} style={{ display: "flex" }}>
-                            <Text
-                              style={{
-                                marginTop: 10,
-                                fontSize: 12,
-                                color: theme.secondaryTextColor,
-                              }}
-                            >
-                              {item.description}
-                            </Text>
+                        {params?.item?.assignment?.resources.map(
+                          (item, index) => (
+                            <View key={index} style={{ display: "flex" }}>
+                              <Text
+                                style={{
+                                  marginTop: 10,
+                                  fontSize: 12,
+                                  color: theme.secondaryTextColor,
+                                }}
+                              >
+                                {item}
+                              </Text>
 
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: theme.primarycolor,
-                              }}
-                            >
-                              {item.link}
-                            </Text>
-                          </View>
-                        ))}
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: theme.primarycolor,
+                                }}
+                              >
+                                {item?.link}
+                              </Text>
+                            </View>
+                          )
+                        )}
                       </View>
                     ) : (
                       <View>
@@ -341,42 +452,52 @@ export default function DisplayComletedAssignment({ navigation, route }) {
             </View>
           </View>
           <View style={{ marginTop: 10 }}></View>
-          <View
-            style={{ marginTop: 20, display: "flex", alignItems: "center" }}
-          >
-            <TouchableOpacity
-              style={{
-                height: 46,
-                width: "100%",
-                backgroundColor: "#AAAAAA",
-                borderRadius: 5,
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <Ionicons name="document-outline" size={24} color="#FFFFFF" />
-              <Text
-                style={{ fontSize: 14, color: "#fff", fontWeight: "semibold" }}
+          {params?.item?.documentLink?.length > 0 &&
+            params?.item?.documentLink?.map((item, index) => (
+              <View
+                style={{ marginTop: 20, display: "flex", alignItems: "center" }}
               >
-                {params?.assignment?.fileName}
-              </Text>
-            </TouchableOpacity>
-            {/* <Button
-            mode={"contained"}
-            buttonColor="#2B78CA"
-            contentStyle={{ height: 40 }}
-            labelStyle={{
-              fontSize: 14,
-              color: "#fff",
-            }}
-            style={{ borderRadius: 8 }}
-          >
-            Submit Assignment
-          </Button> */}
-          </View>
+                <TouchableOpacity
+                  style={{
+                    height: 46,
+                    width: "100%",
+                    backgroundColor: "#AAAAAA",
+                    borderRadius: 5,
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                  onPress={() => {
+                    Linking.openURL(item?.url);
+                  }}
+                >
+                  <Ionicons name="document-outline" size={24} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#fff",
+                      fontWeight: "semibold",
+                    }}
+                  >
+                    {item?.label}
+                  </Text>
+                </TouchableOpacity>
+                {/* <Button
+                  mode={"contained"}
+                  buttonColor="#2B78CA"
+                  contentStyle={{ height: 40 }}
+                  labelStyle={{
+                    fontSize: 14,
+                    color: "#fff",
+                  }}
+                  style={{ borderRadius: 8 }}
+                >
+                  Submit Assignment
+                </Button> */}
+              </View>
+            ))}
         </ScrollView>
       </View>
     </SafeAreaView>

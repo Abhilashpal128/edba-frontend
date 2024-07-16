@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { useForm, Controller } from "react-hook-form";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CheckBox } from "react-native-web";
 import { Checkbox } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { EventsAndNotices, post } from "../../utils/apis/TeacherApis/login";
@@ -25,13 +25,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { login } from "../../Redux/slices/LoginSlice";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useThemeContext } from "../../hooks/useTheme";
+import * as Notifications from "expo-notifications";
+import { storeDataInStorage } from "../../Storage/storage";
 
 const LoginScreen = () => {
   const { theme } = useThemeContext();
   const [isChecked, setIsChecked] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+  const Token = useSelector((state) => state?.token?.token);
+  console.log(`Token In Login component `, Token);
 
   const user = useSelector((state) => state?.login?.user);
   const navigation = useNavigation();
@@ -44,6 +50,18 @@ const LoginScreen = () => {
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
   };
+  // const getExpoToken = async () => {
+  //   console.log(`hii from login`);
+  //   token = (await Notifications.getExpoPushTokenAsync()).data;
+  //   console.log("Expo Push Token: in Login ", token);
+  //   setToken(token);
+  // };
+
+  // useEffect(() => {
+  //   console.log(`hii from login`);
+
+  //   getExpoToken();
+  // }, [isFocused]);
 
   const onSubmit = async (data) => {
     // const userData = {
@@ -55,13 +73,15 @@ const LoginScreen = () => {
     // const response = await EventsAndNotices();
     // console.log(`responseDatatta `, response);
     // Alert.alert("Form Data", JSON.stringify(data));
+    // console.log(data, Token);
 
     try {
       setIsLoading(true);
-      const response = await post("user/login", data);
+      const response = await post("user/login", { ...data, fcm_token: Token });
       if (response?.errCode == -1) {
-        setIsLoading(false);
         dispatch(login(response?.data));
+        setIsLoading(false);
+        await storeDataInStorage("userData", response?.data);
         console.log(response);
       } else {
         setIsLoading(false);
@@ -71,6 +91,7 @@ const LoginScreen = () => {
       setIsLoading(false);
       Alert.alert(JSON.stringify(error));
     }
+    // Alert.alert(JSON.stringify(Token));
 
     // dispatch(login(data));
 

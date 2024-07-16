@@ -96,13 +96,11 @@ export default function Profile() {
       headerTitleAlign: "center", // Adjust alignment for header title (if needed)
       headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
-
-  
   return (
     <SafeAreaView style={{ backgroundColor: theme.backgroundColor, flex: 1 }}>
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false} >
         <View style={{ height: 150 }}>
           <View style={{ marginTop: 50 }}>
             <View

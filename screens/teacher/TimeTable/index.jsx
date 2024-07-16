@@ -207,6 +207,7 @@ export default function TeacherTimeTable({ navigation, route }) {
   };
 
   const fetchTimetable = async (Todaysdate) => {
+    console.log(`TeacherId`, TeacherId);
     const response = await post("timetable/search", {
       teacherId: TeacherId,
       date: Todaysdate,
@@ -216,7 +217,7 @@ export default function TeacherTimeTable({ navigation, route }) {
     console.log("Response data:", response.data);
 
     if (response.errCode == -1) {
-      const groupedByDate = response.data.reduce((acc, entry) => {
+      const groupedByDate = response?.data?.reduce((acc, entry) => {
         const { date } = entry;
 
         // If date doesn't exist in acc yet, create it
@@ -271,7 +272,7 @@ export default function TeacherTimeTable({ navigation, route }) {
       response.data.forEach((entry) => {
         console.log("Processing entry date:", entry.date);
       });
-      const groupedByDate = response.data.reduce((acc, entry) => {
+      const groupedByDate = response?.data.reduce((acc, entry) => {
         const { date } = entry;
         console.log("Current entry:", entry);
 
@@ -333,9 +334,9 @@ export default function TeacherTimeTable({ navigation, route }) {
     }
   };
 
-  // const timeSlots = timetableDataArray[0].classes.map(
-  //   (classInfo) => classInfo.time
-  // );
+  const timeSlots = timetableDataArray[0].classes.map(
+    (classInfo) => classInfo.time
+  );
 
   const fetchDataWeekWise = async (startDate) => {
     try {
@@ -428,14 +429,14 @@ export default function TeacherTimeTable({ navigation, route }) {
       fetchTimetableOfMonth(currentMonthNumber);
     }
   };
-  const slideAnim = useRef(new Animated.Value(1000)).current;
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [slideAnim]);
+  // const slideAnim = useRef(new Animated.Value(1000)).current;
+  // useEffect(() => {
+  //   Animated.timing(slideAnim, {
+  //     toValue: 0,
+  //     duration: 300,
+  //     useNativeDriver: true,
+  //   }).start();
+  // }, [slideAnim]);
 
   useEffect(() => {
     fetchDataWeekWise(moment(Today));
@@ -448,551 +449,543 @@ export default function TeacherTimeTable({ navigation, route }) {
   }, TimeTableData[0]);
 
   return (
-    <Animated.View
-      style={[
-        {
-          bottom: 0,
-          width: "100%",
-          height: "100%",
-          backgroundColor: "#f2f2f2",
-          justifyContent: "center",
-          alignItems: "center",
-        },
-        { transform: [{ translateY: slideAnim }] },
-      ]}
+    // <Animated.View
+    //   style={[
+    //     {
+    //       bottom: 0,
+    //       width: "100%",
+    //       height: "100%",
+    //       backgroundColor: "#f2f2f2",
+    //       justifyContent: "center",
+    //       alignItems: "center",
+    //     },
+    //     { transform: [{ translateY: slideAnim }] },
+    //   ]}
+    // >
+    <SafeAreaView
+      style={{
+        backgroundColor: theme.backgroundColor,
+        width: "100%",
+        height: "100%",
+      }}
     >
-      <SafeAreaView
-        style={{
-          backgroundColor: theme.backgroundColor,
-          width: "100%",
-          height: "100%",
-        }}
-      >
-        {isLoading == true ? (
-          <View>
-            <TimeTableshimmer />
-          </View>
-        ) : (
-          <SafeAreaView
-            style={{
-              backgroundColor: theme.backgroundColor,
-              width: "100%",
-              height: "100%",
-            }}
-          >
-            {classDetailTab ? (
-              <View>
-                <ClassExchange
-                  classDetail={selectedClassDetail}
-                  classDate={selectedClassDate}
-                  classDay={selectedClassDay}
-                  setClassDetailTab={setClassDetailTab}
-                />
-              </View>
-            ) : (
-              <ScrollView
-                style={{ marginHorizontal: 10 }}
-                showsVerticalScrollIndicator={false}
+      {isLoading == true ? (
+        <View>
+          <TimeTableshimmer />
+        </View>
+      ) : (
+        <SafeAreaView
+          style={{
+            backgroundColor: theme.backgroundColor,
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          {classDetailTab ? (
+            <View>
+              <ClassExchange
+                classDetail={selectedClassDetail}
+                classDate={selectedClassDate}
+                classDay={selectedClassDay}
+                setClassDetailTab={setClassDetailTab}
+              />
+            </View>
+          ) : (
+            <ScrollView
+              style={{ marginHorizontal: 10 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginVertical: 10,
+                }}
               >
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      color: theme.primaryTextColor,
+                    }}
+                  >
+                    My class Schedules
+                  </Text>
+                </View>
+                <View style={{ width: "40%" }}>
+                  {/* <RNPickerSelect
+                    onValueChange={(value) => {
+                      setSelectedMonth(value);
+                      console.log(`typppe`, typeof value);
+                    }}
+                    items={Months}
+                    placeholder={{ label: "Select Month", value: "" }}
+                    style={{
+                      inputIOS: [
+                        {
+                          borderWidth: 1,
+                          borderColor: "#ccc",
+                          paddingHorizontal: 10,
+                          borderRadius: 5,
+                          marginBottom: 10,
+                          color: theme.primaryTextColor,
+                        },
+                      ],
+                      inputAndroid: [
+                        {
+                          borderWidth: 1,
+                          borderColor: "#ccc",
+                          paddingHorizontal: 10,
+                          borderRadius: 5,
+                          marginBottom: 10,
+                          color: theme.primaryTextColor,
+                        },
+                      ],
+                      iconContainer: {
+                        top: 10,
+                        right: 14,
+                      },
+                    }}
+                    Icon={() => (
+                      <AntDesign
+                        name="caretdown"
+                        size={12}
+                        color={`${theme.secondaryTextColor}80`}
+                      />
+                    )}
+                    value={selectedMonth}
+                    useNativeAndroidPickerStyle={false}
+                  /> */}
+                </View>
+              </View>
+              <ScrollView horizontal={true}>
+                <View
+                  style={{
+                    height: 58,
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 10,
+                    marginHorizontal: 10,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => handleWeekTabPress("Today")}
+                    style={[
+                      {
+                        width: 96,
+                        height: 34,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderRadius: 20,
+                      },
+                      {
+                        backgroundColor: `${
+                          activeWeek == "Today"
+                            ? theme.primarycolor
+                            : theme.backgroundColor
+                        }`,
+
+                        borderColor: `${
+                          activeWeek == "Today"
+                            ? theme.primarycolor
+                            : theme.secondaryTextColor
+                        }`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        {
+                          borderRadius: 20,
+                          fontSize: 12,
+                        },
+                        {
+                          color: `${
+                            activeWeek == "Today"
+                              ? "#FFFFFF"
+                              : theme.secondaryTextColor
+                          }`,
+                        },
+                      ]}
+                    >
+                      Today
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleWeekTabPress("ThisWeek");
+                    }}
+                    style={[
+                      {
+                        width: 96,
+                        height: 34,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderRadius: 20,
+                      },
+                      {
+                        backgroundColor: `${
+                          activeWeek == "ThisWeek"
+                            ? theme.primarycolor
+                            : theme.backgroundColor
+                        }`,
+                        borderColor: `${
+                          activeWeek == "ThisWeek"
+                            ? theme.primarycolor
+                            : theme.secondaryTextColor
+                        }`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        {
+                          borderRadius: 20,
+                          fontSize: 12,
+                        },
+                        {
+                          color: `${
+                            activeWeek == "ThisWeek"
+                              ? "#FFFFFF"
+                              : theme.secondaryTextColor
+                          }`,
+                        },
+                      ]}
+                    >
+                      This Week
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleWeekTabPress("NextWeek")}
+                    style={[
+                      {
+                        width: 96,
+                        height: 34,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderRadius: 20,
+                      },
+                      {
+                        backgroundColor: `${
+                          activeWeek == "NextWeek"
+                            ? theme.primarycolor
+                            : theme.backgroundColor
+                        }`,
+
+                        borderColor: `${
+                          activeWeek == "NextWeek"
+                            ? theme.primarycolor
+                            : theme.secondaryTextColor
+                        }`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        {
+                          borderRadius: 20,
+                          fontSize: 12,
+                        },
+                        {
+                          color: `${
+                            activeWeek == "NextWeek"
+                              ? "#FFFFFF"
+                              : theme.secondaryTextColor
+                          }`,
+                        },
+                      ]}
+                    >
+                      Next Week
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      {
+                        width: 96,
+                        height: 34,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderRadius: 20,
+                      },
+                      {
+                        backgroundColor: `${
+                          activeWeek == "ThisMonth"
+                            ? theme.primarycolor
+                            : theme.backgroundColor
+                        }`,
+
+                        borderColor: `${
+                          activeWeek == "ThisMonth"
+                            ? theme.primarycolor
+                            : theme.secondaryTextColor
+                        }`,
+                      },
+                    ]}
+                    onPress={() => {
+                      handleWeekTabPress("ThisMonth");
+                    }}
+                  >
+                    <Text
+                      style={[
+                        {
+                          borderRadius: 20,
+                          fontSize: 12,
+                        },
+                        {
+                          color: `${
+                            activeWeek == "ThisMonth"
+                              ? "#FFFFFF"
+                              : theme.secondaryTextColor
+                          }`,
+                        },
+                      ]}
+                    >
+                      This Month
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+              <ScrollView>
                 <View
                   style={{
                     display: "flex",
                     flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginVertical: 10,
                   }}
                 >
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: "bold",
-                        color: theme.primaryTextColor,
-                      }}
-                    >
-                      My class Schedules
-                    </Text>
-                  </View>
-                  <View style={{ width: "40%" }}>
-                    <RNPickerSelect
-                      onValueChange={(value) => {
-                        setSelectedMonth(value);
-                        console.log(`typppe`, typeof value);
-                      }}
-                      items={Months}
-                      placeholder={{ label: "Select Month", value: "" }}
-                      style={{
-                        inputIOS: [
-                          {
-                            borderWidth: 1,
-                            borderColor: "#ccc",
-                            paddingHorizontal: 10,
-                            borderRadius: 5,
-                            marginBottom: 10,
-                            color: theme.primaryTextColor,
-                          },
-                        ],
-                        inputAndroid: [
-                          {
-                            borderWidth: 1,
-                            borderColor: "#ccc",
-                            paddingHorizontal: 10,
-                            borderRadius: 5,
-                            marginBottom: 10,
-                            color: theme.primaryTextColor,
-                          },
-                        ],
-                        iconContainer: {
-                          top: 10,
-                          right: 14,
-                        },
-                      }}
-                      Icon={() => (
-                        <AntDesign
-                          name="caretdown"
-                          size={12}
-                          color={`${theme.secondaryTextColor}80`}
-                        />
-                      )}
-                      value={selectedMonth}
-                      useNativeAndroidPickerStyle={false}
-                    />
-                  </View>
-                </View>
-                <ScrollView horizontal={true}>
-                  <View
-                    style={{
-                      height: 58,
-                      display: "flex",
-                      flexDirection: "row",
-                      gap: 10,
-                      marginHorizontal: 10,
-                    }}
-                  >
-                    <TouchableOpacity
-                      onPress={() => handleWeekTabPress("Today")}
-                      style={[
-                        {
-                          width: 96,
-                          height: 34,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderRadius: 20,
-                        },
-                        {
-                          backgroundColor: `${
-                            activeWeek == "Today"
-                              ? theme.primarycolor
-                              : theme.backgroundColor
-                          }`,
-
-                          borderColor: `${
-                            activeWeek == "Today"
-                              ? theme.primarycolor
-                              : theme.secondaryTextColor
-                          }`,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          {
-                            borderRadius: 20,
-                            fontSize: 12,
-                          },
-                          {
-                            color: `${
-                              activeWeek == "Today"
-                                ? "#FFFFFF"
-                                : theme.secondaryTextColor
-                            }`,
-                          },
-                        ]}
-                      >
-                        Today
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        handleWeekTabPress("ThisWeek");
-                      }}
-                      style={[
-                        {
-                          width: 96,
-                          height: 34,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderRadius: 20,
-                        },
-                        {
-                          backgroundColor: `${
-                            activeWeek == "ThisWeek"
-                              ? theme.primarycolor
-                              : theme.backgroundColor
-                          }`,
-                          borderColor: `${
-                            activeWeek == "ThisWeek"
-                              ? theme.primarycolor
-                              : theme.secondaryTextColor
-                          }`,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          {
-                            borderRadius: 20,
-                            fontSize: 12,
-                          },
-                          {
-                            color: `${
-                              activeWeek == "ThisWeek"
-                                ? "#FFFFFF"
-                                : theme.secondaryTextColor
-                            }`,
-                          },
-                        ]}
-                      >
-                        This Week
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleWeekTabPress("NextWeek")}
-                      style={[
-                        {
-                          width: 96,
-                          height: 34,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderRadius: 20,
-                        },
-                        {
-                          backgroundColor: `${
-                            activeWeek == "NextWeek"
-                              ? theme.primarycolor
-                              : theme.backgroundColor
-                          }`,
-
-                          borderColor: `${
-                            activeWeek == "NextWeek"
-                              ? theme.primarycolor
-                              : theme.secondaryTextColor
-                          }`,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          {
-                            borderRadius: 20,
-                            fontSize: 12,
-                          },
-                          {
-                            color: `${
-                              activeWeek == "NextWeek"
-                                ? "#FFFFFF"
-                                : theme.secondaryTextColor
-                            }`,
-                          },
-                        ]}
-                      >
-                        Next Week
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        {
-                          width: 96,
-                          height: 34,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderWidth: 1,
-                          borderRadius: 20,
-                        },
-                        {
-                          backgroundColor: `${
-                            activeWeek == "ThisMonth"
-                              ? theme.primarycolor
-                              : theme.backgroundColor
-                          }`,
-
-                          borderColor: `${
-                            activeWeek == "ThisMonth"
-                              ? theme.primarycolor
-                              : theme.secondaryTextColor
-                          }`,
-                        },
-                      ]}
-                      onPress={() => {
-                        handleWeekTabPress("ThisMonth");
-                      }}
-                    >
-                      <Text
-                        style={[
-                          {
-                            borderRadius: 20,
-                            fontSize: 12,
-                          },
-                          {
-                            color: `${
-                              activeWeek == "ThisMonth"
-                                ? "#FFFFFF"
-                                : theme.secondaryTextColor
-                            }`,
-                          },
-                        ]}
-                      >
-                        This Month
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </ScrollView>
-                <ScrollView>
                   <View
                     style={{
                       display: "flex",
-                      flexDirection: "row",
+                      flexDirection: "column",
+                      paddingHorizontal: 10,
+                      backgroundColor: `${theme.primarycolor}0D`,
                     }}
                   >
                     <View
                       style={{
+                        height: 60,
                         display: "flex",
-                        flexDirection: "column",
-                        paddingHorizontal: 10,
-                        backgroundColor: `${theme.primarycolor}0D`,
+                        justifyContent: "center",
+                        alignItems: "center",
                       }}
                     >
-                      <View
+                      <Text
                         style={{
-                          height: 60,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
+                          fontWeight: "500",
+                          fontSize: 16,
+                          color: theme.primaryTextColor,
                         }}
                       >
-                        <Text
-                          style={{
-                            fontWeight: "500",
-                            fontSize: 16,
-                            color: theme.primaryTextColor,
-                          }}
-                        >
-                          Time
-                        </Text>
-                      </View>
+                        Time
+                      </Text>
+                    </View>
 
-                      {dayWithMaxClasses?.classes?.map((classInfo, index) => (
+                    {dayWithMaxClasses?.classes?.map((classInfo, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 10,
+                        }}
+                      >
                         <View
-                          key={index}
                           style={{
+                            height: 80,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            gap: 10,
+                            marginTop: 10,
                           }}
                         >
-                          <View
-                            style={{
-                              height: 80,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              marginTop: 10,
-                            }}
-                          >
-                            <Text style={{ color: theme.primaryTextColor }}>
-                              {classInfo?.startTime}
-                            </Text>
-                            <Text>To</Text>
-                            <Text style={{ color: theme.primaryTextColor }}>
-                              {classInfo?.endTime}
-                            </Text>
-                          </View>
+                          <Text style={{ color: theme.primaryTextColor }}>
+                            {classInfo?.startTime}
+                          </Text>
+                          <Text>To</Text>
+                          <Text style={{ color: theme.primaryTextColor }}>
+                            {classInfo?.endTime}
+                          </Text>
                         </View>
-                      ))}
-                    </View>
-                    <ScrollView>
-                      <ScrollView horizontal={true}>
-                        <View
-                          style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 2,
-                          }}
-                        >
-                          {TimeTableData.length > 0 ? (
-                            TimeTableData.map((data, index) => (
-                              <View key={index}>
-                                <View>
+                      </View>
+                    ))}
+                  </View>
+                  <ScrollView>
+                    <ScrollView horizontal={true}>
+                      <View
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          gap: 2,
+                        }}
+                      >
+                        {TimeTableData.length > 0 ? (
+                          TimeTableData.map((data, index) => (
+                            <View key={index}>
+                              <View>
+                                <View
+                                  style={{
+                                    height: 60,
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <Text
+                                    style={{ color: theme.primaryTextColor }}
+                                  >
+                                    {JSON.stringify(data?.day).slice(1, 4)}
+                                  </Text>
+                                  <Text
+                                    style={{ color: theme.primaryTextColor }}
+                                  >
+                                    {moment(data?.date).format("DD")}
+                                  </Text>
+                                </View>
+
+                                {data?.classes && (
                                   <View
                                     style={{
-                                      height: 60,
                                       display: "flex",
-                                      justifyContent: "center",
-                                      alignItems: "center",
+                                      flexDirection: "column",
+                                      gap: 10,
                                     }}
                                   >
-                                    <Text
-                                      style={{ color: theme.primaryTextColor }}
-                                    >
-                                      {JSON.stringify(data?.day).slice(1, 4)}
-                                    </Text>
-                                    <Text
-                                      style={{ color: theme.primaryTextColor }}
-                                    >
-                                      {moment(data?.date).format("DD")}
-                                    </Text>
-                                  </View>
-
-                                  {data?.classes && (
-                                    <View
-                                      style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 10,
-                                      }}
-                                    >
-                                      {data?.classes.map((classData, index) => (
-                                        <TouchableOpacity
-                                          key={index}
+                                    {data?.classes.map((classData, index) => (
+                                      <TouchableOpacity
+                                        key={index}
+                                        style={{
+                                          marginLeft: 10,
+                                          height: 80,
+                                          backgroundColor: theme.BoxColor,
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          justifyContent: "center",
+                                          alignItems: "center",
+                                          padding: 10,
+                                          borderRadius: 5,
+                                          width:
+                                            activeWeek == "Today"
+                                              ? 300
+                                              : "auto",
+                                        }}
+                                        onPress={() => {
+                                          handleClassExchange(
+                                            classData,
+                                            data?.date,
+                                            data?.day
+                                          );
+                                        }}
+                                      >
+                                        <View
                                           style={{
-                                            marginLeft: 10,
-                                            height: 80,
-                                            backgroundColor: theme.BoxColor,
                                             display: "flex",
-                                            flexDirection: "column",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            padding: 10,
-                                            borderRadius: 5,
-                                            width:
-                                              activeWeek == "Today"
-                                                ? 300
-                                                : "auto",
-                                          }}
-                                          onPress={() => {
-                                            handleClassExchange(
-                                              classData,
-                                              data?.date,
-                                              data?.day
-                                            );
+                                            flexDirection: "row",
+                                            flexWrap: "wrap",
                                           }}
                                         >
-                                          <View
+                                          <Text
                                             style={{
-                                              display: "flex",
-                                              flexDirection: "row",
-                                              flexWrap: "wrap",
+                                              color:
+                                                activeWeek == "Today"
+                                                  ? theme.primaryTextColor
+                                                  : theme.secondaryTextColor,
+                                              fontSize:
+                                                activeWeek == "Today" ? 16 : 12,
                                             }}
                                           >
-                                            <Text
-                                              style={{
-                                                color:
-                                                  activeWeek == "Today"
-                                                    ? theme.primaryTextColor
-                                                    : theme.secondaryTextColor,
-                                                fontSize:
-                                                  activeWeek == "Today"
-                                                    ? 16
-                                                    : 12,
-                                              }}
-                                            >
-                                              Class:
-                                            </Text>
-                                            <Text
-                                              style={{
-                                                color:
-                                                  activeWeek == "Today"
-                                                    ? theme.secondaryTextColor
-                                                    : theme.primaryTextColor,
-                                                fontSize:
-                                                  activeWeek == "Today"
-                                                    ? 16
-                                                    : 12,
-                                                fontWeight: "400",
-                                              }}
-                                            >
-                                              {JSON.stringify(
-                                                classData?.class?.name
-                                              )}
-                                            </Text>
-                                          </View>
-                                          <View
+                                            Class:
+                                          </Text>
+                                          <Text
                                             style={{
-                                              display: "flex",
-                                              flexDirection: "row",
+                                              color:
+                                                activeWeek == "Today"
+                                                  ? theme.secondaryTextColor
+                                                  : theme.primaryTextColor,
+                                              fontSize:
+                                                activeWeek == "Today" ? 16 : 12,
+                                              fontWeight: "400",
                                             }}
                                           >
-                                            <Text
-                                              style={{
-                                                color:
-                                                  activeWeek == "Today"
-                                                    ? theme.primaryTextColor
-                                                    : theme.secondaryTextColor,
-                                                fontSize:
-                                                  activeWeek == "Today"
-                                                    ? 16
-                                                    : 12,
-                                              }}
-                                            >
-                                              Room No:
-                                            </Text>
-                                            <Text
-                                              style={{
-                                                color:
-                                                  activeWeek == "Today"
-                                                    ? theme.secondaryTextColor
-                                                    : theme.primaryTextColor,
-                                                fontSize:
-                                                  activeWeek == "Today"
-                                                    ? 16
-                                                    : 12,
-                                                fontWeight: "400",
-                                              }}
-                                            >
-                                              {classData?.room}
-                                            </Text>
-                                          </View>
-                                        </TouchableOpacity>
-                                      ))}
-                                    </View>
-                                  )}
+                                            {JSON.stringify(
+                                              classData?.class?.name
+                                            )}
+                                          </Text>
+                                        </View>
+                                        <View
+                                          style={{
+                                            display: "flex",
+                                            flexDirection: "row",
+                                          }}
+                                        >
+                                          <Text
+                                            style={{
+                                              color:
+                                                activeWeek == "Today"
+                                                  ? theme.primaryTextColor
+                                                  : theme.secondaryTextColor,
+                                              fontSize:
+                                                activeWeek == "Today" ? 16 : 12,
+                                            }}
+                                          >
+                                            Room No:
+                                          </Text>
+                                          <Text
+                                            style={{
+                                              color:
+                                                activeWeek == "Today"
+                                                  ? theme.secondaryTextColor
+                                                  : theme.primaryTextColor,
+                                              fontSize:
+                                                activeWeek == "Today" ? 16 : 12,
+                                              fontWeight: "400",
+                                            }}
+                                          >
+                                            {classData?.room}
+                                          </Text>
+                                        </View>
+                                      </TouchableOpacity>
+                                    ))}
+                                  </View>
+                                )}
 
-                                  {/* <ScrollView>
+                                {/* <ScrollView>
                 {data.classes.map((item) => (
                   <View></View>
                 ))}
               </ScrollView> */}
-                                </View>
                               </View>
-                            ))
-                          ) : (
-                            <View>
-                              <Text style={{ color: theme.primaryTextColor }}>
-                                {" "}
-                                No Lectures
-                              </Text>
                             </View>
-                          )}
-                        </View>
-                      </ScrollView>
+                          ))
+                        ) : (
+                          <View>
+                            <Text style={{ color: theme.primaryTextColor }}>
+                              {" "}
+                              No Lectures
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </ScrollView>
-                  </View>
-                </ScrollView>
+                  </ScrollView>
+                </View>
               </ScrollView>
-            )}
-          </SafeAreaView>
-        )}
-      </SafeAreaView>
-    </Animated.View>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      )}
+    </SafeAreaView>
+    // </Animated.View>
   );
 }
 

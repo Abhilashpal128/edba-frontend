@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { cleardatafromStorage } from "../../Storage/storage";
 
 const loginSlice = createSlice({
   name: "login",

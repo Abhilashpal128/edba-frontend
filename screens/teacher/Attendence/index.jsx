@@ -1,4 +1,9 @@
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import {
   SafeAreaView,
   View,
@@ -9,6 +14,8 @@ import {
   ScrollView,
   Modal,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { Calendar } from "react-native-calendars";
@@ -22,15 +29,15 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { useSelector } from "react-redux";
-import { post } from "../../../utils/apis/TeacherApis/login";
+import { get, post } from "../../../utils/apis/TeacherApis/login";
 // import { theme } from "../../../theming";
 
 const data = {
-  classes: [
-    { label: "FYJC- 11A", value: "90123" },
-    { label: "FYJC- 11B", value: "90124" },
-    // add more classes as needed
-  ],
+  // classes: [
+  //   { label: "FYJC- 11A", value: "90123" },
+  //   { label: "FYJC- 11B", value: "90124" },
+  //   // add more classes as needed
+  // ],
   attendance: [
     { rollNo: "01", name: "Emily Johnson", status: "P" },
     { rollNo: "02", name: "Alex Smith", status: "P" },
@@ -54,6 +61,11 @@ const data = {
   ],
 };
 
+const halfDay = [
+  { label: "First Half", value: "First Half" },
+  { label: "Second Half", value: "Second Half" },
+];
+
 export default function TeacherAttendence() {
   const { theme } = useThemeContext();
   const [studentAttendenceData, setStudentAttendenceData] = useState(data);
@@ -66,15 +78,35 @@ export default function TeacherAttendence() {
   const [studentList, setStudentList] = useState();
   const [absentList, setAbsentList] = useState([]);
   const [classError, setClassError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [teacherDetail, setTeacherDetail] = useState(null);
+  const [slotError, setSlotError] = useState(false);
+  const [SubjectError, setSubjectError] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [lectureSlots, setLectureSlots] = useState([]);
+  const [slot, setSlot] = useState(null);
+  const [subjectList, setSubjectList] = useState([]);
+  const [attendenceType, setAttendenceType] = useState("Full Day");
   const isFocused = useIsFocused();
   const user = useSelector((state) => state.login.user);
+  console.log(`user User`, user);
   const TeacherId = user?.teacherId;
+  const SettingId = user?.settingId;
 
   const navigation = useNavigation();
 
   const handlePresentyModal = (studentId) => {
     setPresentModal(studentId);
   };
+
+  const onRefresh = useCallback(() => {
+    handleClassSelect(selectedClass?.value);
+  }, []);
+
+  // const onRefresh = () => {
+
+  // };
 
   const handleAbsentOrPresent = (studentId, status) => {
     setPresentModal(0);
@@ -141,18 +173,39 @@ export default function TeacherAttendence() {
     // setAbsentList(Absenties);
   };
 
+  const fetchTeacherSubjects = async (value) => {
+    try {
+      const response = await post("classes/subject", {
+        teacherId: TeacherId,
+        classId: value,
+      });
+      if (response?.errCode == -1) {
+        setSubjectList(
+          response?.data.map((item) => ({
+            label: item?.subjectName,
+            value: item?.id,
+          }))
+        );
+      } else {
+        setSubjectList([]);
+      }
+    } catch (error) {}
+  };
+
   const handleClassSelect = async (value) => {
+    setRefreshing(true);
+    fetchTeacherSubjects(value);
     try {
       setClassError(false);
       const date = moment(selectedDate).format("YYYY-MM-DD");
       const selectedClassData = classes.find((cls) => cls?.value == value);
       setSelectedClass(selectedClassData);
       console.log(`selectedClassData`, selectedClassData);
-
+      setIsLoading(true);
       const response = await post("attendences/get", {
         classId: value,
         date: date,
-        tecaherId: TeacherId,
+        teacherId: TeacherId,
       });
       console.log(`attendence StudentList `, response);
       if (response.errCode == -1) {
@@ -163,11 +216,17 @@ export default function TeacherAttendence() {
           .map((data) => data?.id);
         console.log(`absentStudents`, absentStudents);
         setAbsentList(absentStudents);
+        setIsLoading(false);
       } else {
         console.log(response?.errMsg);
+        setIsLoading(false);
       }
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -223,6 +282,11 @@ export default function TeacherAttendence() {
       headerTintColor: "#000000", // Text color for back button and header title
     });
   }, [navigation, theme]);
+
+  const handleSlotSelect = (value) => {
+    setSlotError(false);
+    setSlot(value);
+  };
 
   const renderItem = ({ item }) => (
     <View
@@ -397,6 +461,17 @@ export default function TeacherAttendence() {
         setClassError(true);
         return true;
       }
+
+      if (attendenceType == "Lecture" && slot == null) {
+        setSlotError(true);
+        return true;
+      }
+
+      if (attendenceType == "Subject" && selectedSubject == null) {
+        setSubjectError(true);
+        return true;
+      }
+
       const classId = selectedClass?.value;
       const date = moment(selectedDate).format("YYYY-MM-DD");
       const absentees = absentList.map((absent) => ({
@@ -408,6 +483,10 @@ export default function TeacherAttendence() {
         date,
         absentees,
         teacherId: TeacherId,
+        slot: attendenceType,
+        slotValue: slot,
+        subjectId: selectedSubject,
+        settingId: SettingId ? SettingId : null,
       };
       const response = await post("attendences/mark", postData);
       console.log(`AttendenceResponse`, response?.data);
@@ -443,9 +522,72 @@ export default function TeacherAttendence() {
     }
   };
 
+  const fetchAttendenceSettings = async () => {
+    console.log(`SettingId`, SettingId);
+    try {
+      const response = await get(`settings/${SettingId}`);
+      console.log(`fetchAttendenceSettings response`, response);
+      if (response?.errCode == -1) {
+        console.log(
+          `response?.data?.attendanceType`,
+          response?.data?.attendanceType
+        );
+        setAttendenceType(response?.data?.attendanceType);
+        if (response?.data?.lectureSlots) {
+          // setSlot(response?.data?.lectureSlots);
+
+          const lectureSlotsData = response?.data?.lectureSlots.map((item) => ({
+            label: item,
+            value: item,
+          }));
+          setLectureSlots(lectureSlotsData);
+        }
+      }
+    } catch (error) {
+      console.log(`error while fetchAttendenceSettings AttendenceType`, error);
+    }
+  };
+
+  const getTeacherDetail = async () => {
+    try {
+      const response = await post(`teacher/get`, {
+        teacherId: TeacherId,
+      });
+      console.log(`teacherDetail`, response?.data?.instituteId);
+
+      // setTeacherDetail(response?.data);
+      fetchAttendencetype(response?.data?.instituteId);
+    } catch (error) {
+      console.log(`teacher`, error);
+      setTeacherDetail(null);
+    }
+  };
+
+  const fetchAttendencetype = async (instituteId) => {
+    try {
+      const response = await post(`institute/get`, {
+        id: instituteId,
+      });
+      console.log(`fetchAttendencetype`, response?.data);
+      if (response?.errCode == -1) {
+        setTeacherDetail(response?.data?.attendanceType);
+      }
+    } catch (error) {
+      console.log(`error in fetchAttendencetype`, error);
+    }
+  };
+
   useEffect(() => {
     getClassList();
+    getTeacherDetail();
+    fetchAttendenceSettings();
   }, [isFocused]);
+
+  const handlesubjectSelect = (value) => {
+    console.log(`setSelectedSubject`, value);
+    setSelectedSubject(value);
+    setSubjectError(false);
+  };
 
   return (
     <SafeAreaView
@@ -455,8 +597,182 @@ export default function TeacherAttendence() {
         height: "100%",
       }}
     >
-      <View style={{ marginHorizontal: 20 }}>
-        <View>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={{ marginHorizontal: 20 }}>
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "500",
+                color: theme.primaryTextColor,
+              }}
+            >
+              Select Class
+            </Text>
+            <View
+              style={{
+                marginBottom: 20,
+                borderWidth: 1,
+                borderColor: "gray",
+                borderRadius: 4,
+                height: 36,
+                justifyContent: "center",
+              }}
+            >
+              <RNPickerSelect
+                onValueChange={handleClassSelect}
+                items={classes}
+                value={selectedClass !== null ? selectedClass?.value : ""}
+                style={{
+                  inputIOS: {
+                    fontSize: 16,
+                    paddingVertical: 12,
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: "gray",
+                    borderRadius: 4,
+                    color: theme.primaryTextColor,
+                    paddingRight: 30, // to ensure the text is never behind the icon
+                  },
+                  inputAndroid: {
+                    fontSize: 16,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    borderWidth: 0.5,
+                    borderColor: "purple",
+                    borderRadius: 8,
+                    color: theme.primaryTextColor,
+                    paddingRight: 30, // to ensure the text is never behind the icon
+                  },
+                }}
+                placeholder={{ label: "Select Class", value: null }}
+                color={theme.primaryTextColor}
+              />
+            </View>
+            {classError && (
+              <Text style={{ color: "red" }}>select Class first</Text>
+            )}
+          </View>
+
+          {attendenceType &&
+            (attendenceType == "Full Day" ? (
+              <View></View>
+            ) : attendenceType == "Lecture" ? (
+              <View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "500",
+                    color: theme.primaryTextColor,
+                  }}
+                >
+                  Select Slot
+                </Text>
+                <View
+                  style={{
+                    marginBottom: 20,
+                    borderWidth: 1,
+                    borderColor: "gray",
+                    borderRadius: 4,
+                    height: 36,
+                    justifyContent: "center",
+                  }}
+                >
+                  <RNPickerSelect
+                    onValueChange={handleSlotSelect}
+                    items={lectureSlots}
+                    value={slot}
+                    style={{
+                      inputIOS: {
+                        fontSize: 16,
+                        paddingVertical: 12,
+                        paddingHorizontal: 10,
+                        borderWidth: 1,
+                        borderColor: "gray",
+                        borderRadius: 4,
+                        color: theme.primaryTextColor,
+                        paddingRight: 30, // to ensure the text is never behind the icon
+                      },
+                      inputAndroid: {
+                        fontSize: 16,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        borderWidth: 0.5,
+                        borderColor: "purple",
+                        borderRadius: 8,
+                        color: theme.primaryTextColor,
+                        paddingRight: 30, // to ensure the text is never behind the icon
+                      },
+                    }}
+                    placeholder={{ label: "Select Class", value: null }}
+                    color={theme.primaryTextColor}
+                  />
+                </View>
+                {slotError && (
+                  <Text style={{ color: "red" }}>select Slot first</Text>
+                )}
+              </View>
+            ) : (
+              <View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "500",
+                    color: theme.primaryTextColor,
+                  }}
+                >
+                  Select Subject
+                </Text>
+                <View
+                  style={{
+                    marginBottom: 20,
+                    borderWidth: 1,
+                    borderColor: "gray",
+                    borderRadius: 4,
+                    height: 36,
+                    justifyContent: "center",
+                  }}
+                >
+                  <RNPickerSelect
+                    onValueChange={handlesubjectSelect}
+                    items={subjectList}
+                    value={selectedSubject}
+                    style={{
+                      inputIOS: {
+                        fontSize: 16,
+                        paddingVertical: 12,
+                        paddingHorizontal: 10,
+                        borderWidth: 1,
+                        borderColor: "gray",
+                        borderRadius: 4,
+                        color: theme.primaryTextColor,
+                        paddingRight: 30, // to ensure the text is never behind the icon
+                      },
+                      inputAndroid: {
+                        fontSize: 16,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        borderWidth: 0.5,
+                        borderColor: "purple",
+                        borderRadius: 8,
+                        color: theme.primaryTextColor,
+                        paddingRight: 30, // to ensure the text is never behind the icon
+                      },
+                    }}
+                    placeholder={{ label: "Select Class", value: null }}
+                    color={theme.primaryTextColor}
+                  />
+                </View>
+                {SubjectError && (
+                  <Text style={{ color: "red" }}>select Subject first</Text>
+                )}
+              </View>
+            ))}
+          {/* <View>
           <Text
             style={{
               fontSize: 14,
@@ -464,7 +780,7 @@ export default function TeacherAttendence() {
               color: theme.primaryTextColor,
             }}
           >
-            Select Class
+            Select subject
           </Text>
           <View
             style={{
@@ -509,241 +825,405 @@ export default function TeacherAttendence() {
           {classError && (
             <Text style={{ color: "red" }}>select Class first</Text>
           )}
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
+        </View> */}
+
           <View
             style={{
-              display: "flex",
               flexDirection: "row",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: 2,
+              marginBottom: 20,
             }}
           >
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "bold",
-                color: theme.secondaryTextColor,
-              }}
-            >
-              Class:
-            </Text>
-            <Text
-              style={{
-                color: theme.primaryTextColor,
-                fontWeight: "bold",
-              }}
-            >
-              {selectedClass?.label}
-            </Text>
-          </View>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          <TouchableOpacity onPress={() => handleDateChange(-1)}>
-            {/* <Text style={styles.arrow}>{"<"}</Text> */}
-            <EvilIcons
-              name="chevron-left"
-              size={32}
-              color={theme.secondaryTextColor}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setCalendarVisible(true)}>
             <View
               style={{
                 display: "flex",
                 flexDirection: "row",
-                gap: 8,
+                alignItems: "center",
+                gap: 2,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 16,
                   fontWeight: "bold",
+                  color: theme.secondaryTextColor,
+                }}
+              >
+                Class:
+              </Text>
+              <Text
+                style={{
                   color: theme.primaryTextColor,
-                }}
-              >
-                {selectedDate.format("DD MMM YYYY")}{" "}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
                   fontWeight: "bold",
-                  color: theme.primaryTextColor,
                 }}
               >
-                {selectedDate.format("dddd")}
+                {selectedClass?.label}
               </Text>
-            </View>
-          </TouchableOpacity>
-          {moment().isSame(selectedDate, "day") == true ? (
-            <View></View>
-          ) : (
-            <TouchableOpacity onPress={() => handleDateChange(1)}>
-              {/* <Text style={styles.arrow}>{">"}</Text> */}
-              <EvilIcons
-                name="chevron-right"
-                size={32}
-                color={theme.primaryTextColor}
-                // color={theme.secondaryTextColor}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View>
-          <View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                paddingVertical: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: "#ccc",
-                backgroundColor: theme.DrawerTabBackgroundColor,
-              }}
-            >
-              <Text
-                style={{
-                  flex: 1,
-                  fontSize: 12,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
-                Roll No.
-              </Text>
-              <Text
-                style={{
-                  flex: 1,
-                  fontSize: 12,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
-                Student Name
-              </Text>
-              <Text
-                style={{
-                  flex: 1,
-                  fontSize: 12,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
-                Attendance
-              </Text>
-            </View>
-            <View style={{ height: 370 }}>
-              <FlatList
-                data={studentList}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => index}
-                style={{ marginTop: 20 }}
-              />
             </View>
           </View>
-        </View>
-        <View style={{ marginVertical: 20 }}>
-          <TouchableOpacity
-            style={{
-              width: "90%",
-              height: 40,
-              marginHorizontal: "auto",
-              backgroundColor: theme.primarycolor,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 5,
-            }}
-            onPress={() => {
-              handlesubmitAssignment();
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>
-              UPDATE
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <Modal
-          visible={isCalendarVisible}
-          transparent={true}
-          animationType="slide"
-        >
           <View
             style={{
-              flex: 1,
-              justifyContent: "center",
+              flexDirection: "row",
+              justifyContent: "space-between",
               alignItems: "center",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              marginBottom: 20,
             }}
           >
-            <View
-              style={{
-                width: "90%",
-                backgroundColor: "white",
-                borderRadius: 10,
-                padding: 20,
-              }}
-            >
-              <Calendar
-                current={selectedDate.format("YYYY-MM-DD")}
-                onDayPress={(day) => {
-                  setSelectedDate(moment(day.dateString));
-                  setCalendarVisible(false);
-                }}
-                markedDates={{
-                  [selectedDate.format("YYYY-MM-DD")]: {
-                    selected: true,
-                    marked: true,
-                    selectedColor: "blue",
-                  },
-                }}
-                minDate={"2000-01-01"}
-                maxDate={today.format("YYYY-MM-DD")}
-                disableAllTouchEventsForDisabledDays={true}
-                theme={{
-                  todayTextColor: "#008000",
-                  dayTextColor: "#000000",
-                  textDisabledColor: "#D3D3D3",
-                }}
+            <TouchableOpacity onPress={() => handleDateChange(-1)}>
+              {/* <Text style={styles.arrow}>{"<"}</Text> */}
+              <EvilIcons
+                name="chevron-left"
+                size={32}
+                color={theme.secondaryTextColor}
               />
-              <TouchableOpacity
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCalendarVisible(true)}>
+              <View
                 style={{
-                  marginTop: 10,
-                  padding: 10,
-                  backgroundColor: "#007bff",
-                  borderRadius: 5,
-                  alignItems: "center",
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: 8,
                 }}
-                onPress={() => setCalendarVisible(false)}
               >
                 <Text
                   style={{
-                    color: "white",
-                    fontSize: 16,
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    color: theme.primaryTextColor,
                   }}
                 >
-                  Close
+                  {selectedDate.format("DD MMM YYYY")}{" "}
                 </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    color: theme.primaryTextColor,
+                  }}
+                >
+                  {selectedDate.format("dddd")}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            {moment().isSame(selectedDate, "day") == true ? (
+              <View></View>
+            ) : (
+              <TouchableOpacity onPress={() => handleDateChange(1)}>
+                {/* <Text style={styles.arrow}>{">"}</Text> */}
+                <EvilIcons
+                  name="chevron-right"
+                  size={32}
+                  color={theme.primaryTextColor}
+                  // color={theme.secondaryTextColor}
+                />
               </TouchableOpacity>
+            )}
+          </View>
+
+          <View>
+            <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#ccc",
+                  backgroundColor: theme.DrawerTabBackgroundColor,
+                }}
+              >
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  Roll No.
+                </Text>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  Student Name
+                </Text>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  Attendance
+                </Text>
+              </View>
+              <View style={{ height: 370 }}>
+                {isLoading ? (
+                  <View
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <ActivityIndicator size="large" />
+                  </View>
+                ) : (
+                  // <FlatList
+                  //   data={studentList}
+                  //   renderItem={renderItem}
+                  //   keyExtractor={(item, index) => index}
+                  //   style={{ marginTop: 20 }}
+                  //   refreshControl={
+                  //     <RefreshControl
+                  //       refreshing={refreshing}
+                  //       onRefresh={onRefresh}
+                  //     />
+                  //   }
+                  // />
+                  studentList?.length > 0 &&
+                  studentList.map((item, index) => (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        paddingVertical: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "#ccc",
+                      }}
+                      key={index}
+                    >
+                      <Text
+                        style={[
+                          {
+                            flex: 1,
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            textAlign: "center",
+                          },
+                          { color: theme.primaryTextColor },
+                        ]}
+                      >
+                        {item?.rollNo}
+                      </Text>
+                      <Text
+                        style={[
+                          {
+                            flex: 1,
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            textAlign: "center",
+                          },
+                          { color: theme.primaryTextColor },
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                      {presentModal == item?.id ? (
+                        <View
+                          style={{
+                            flex: 1,
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            textAlign: "center",
+                          }}
+                        >
+                          <View
+                            style={{
+                              display: "flex",
+                              flexDirection: "row",
+                              gap: 1,
+                              justifyContent: "center",
+                              alignItems: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <TouchableOpacity
+                              onPress={() => {
+                                handleAbsentOrPresent(item?.id, "P");
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "green",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                <MaterialCommunityIcons
+                                  name="alpha-p-circle-outline"
+                                  size={32}
+                                />
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                handleAbsentOrPresent(item.id, "A");
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "red",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                <MaterialCommunityIcons
+                                  name="alpha-a-circle-outline"
+                                  size={32}
+                                />
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <View
+                          style={{
+                            flex: 1,
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            textAlign: "center",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => {
+                              handlePresentyModal(item?.id);
+                            }}
+                          >
+                            <Text
+                              style={[
+                                absentList.includes(item?.id)
+                                  ? {
+                                      color: "red",
+                                      fontWeight: "bold",
+                                    }
+                                  : {
+                                      color: "green",
+                                      fontWeight: "bold",
+                                    },
+                                styles.cell,
+                              ]}
+                            >
+                              {absentList.includes(item?.id) ? (
+                                <MaterialCommunityIcons
+                                  name="alpha-a-circle-outline"
+                                  size={32}
+                                />
+                              ) : (
+                                <MaterialCommunityIcons
+                                  name="alpha-p-circle-outline"
+                                  size={32}
+                                />
+                              )}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  ))
+                )}
+              </View>
             </View>
           </View>
-        </Modal>
-      </View>
+          <View style={{ marginVertical: 20 }}>
+            <TouchableOpacity
+              style={{
+                width: "90%",
+                height: 40,
+                marginHorizontal: "auto",
+                backgroundColor: theme.primarycolor,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 5,
+              }}
+              onPress={() => {
+                handlesubmitAssignment();
+              }}
+            >
+              <Text
+                style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}
+              >
+                UPDATE
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Modal
+            visible={isCalendarVisible}
+            transparent={true}
+            animationType="slide"
+          >
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              <View
+                style={{
+                  width: "90%",
+                  backgroundColor: "white",
+                  borderRadius: 10,
+                  padding: 20,
+                }}
+              >
+                <Calendar
+                  current={selectedDate.format("YYYY-MM-DD")}
+                  onDayPress={(day) => {
+                    setSelectedDate(moment(day.dateString));
+                    setCalendarVisible(false);
+                  }}
+                  markedDates={{
+                    [selectedDate.format("YYYY-MM-DD")]: {
+                      selected: true,
+                      marked: true,
+                      selectedColor: "blue",
+                    },
+                  }}
+                  minDate={"2000-01-01"}
+                  maxDate={today.format("YYYY-MM-DD")}
+                  disableAllTouchEventsForDisabledDays={true}
+                  theme={{
+                    todayTextColor: "#008000",
+                    dayTextColor: "#000000",
+                    textDisabledColor: "#D3D3D3",
+                  }}
+                />
+                <TouchableOpacity
+                  style={{
+                    marginTop: 10,
+                    padding: 10,
+                    backgroundColor: "#007bff",
+                    borderRadius: 5,
+                    alignItems: "center",
+                  }}
+                  onPress={() => setCalendarVisible(false)}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 16,
+                    }}
+                  >
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

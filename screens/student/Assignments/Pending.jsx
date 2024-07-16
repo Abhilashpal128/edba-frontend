@@ -1,4 +1,11 @@
-import { useEffect, useRef, useLayoutEffect, useState, useMemo } from "react";
+import {
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   SafeAreaView,
   View,
@@ -8,6 +15,7 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
 } from "react-native";
 import { Svg, Circle, Text as SvgText } from "react-native-svg";
 import { useTheme, Avatar, Divider } from "react-native-paper";
@@ -19,11 +27,32 @@ import { Entypo } from "react-native-vector-icons";
 import { Subjects } from "../../../svg/subjects";
 import moment from "moment";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/StudentApis";
+import { useSelector } from "react-redux";
+import { useIsFocused } from "@react-navigation/native";
+import SvgRenderer from "./SvgRenderer";
+import {
+  AssignmentShimmerEffect,
+  SubjectShimmerEffect,
+} from "./AssignmentShimmerEffect";
 
 export default function Pending({ navigation, route }) {
   const { theme } = useThemeContext();
+  const userData = useSelector((state) => state?.login?.user);
+  console.log(`userdata`, userData);
+  const StudentId = userData?.studentId;
+  const { colors } = useTheme();
+  const subjectData = route?.params?.item;
+  console.log(subjectData);
+  console.log(`subjectData != undefined`, subjectData != undefined);
+  const [subjectSelectedRedirect, setSubjectSelectedRedirect] = useState(
+    subjectData != undefined
+  );
+  const [isSubjectLoading, setIsSubjectLoading] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const isFocused = useIsFocused();
 
-  const [subjects, setSubjects] = useState([
+  const OldsubjectList = [
     {
       label: "English",
       slug: "english",
@@ -59,105 +88,14 @@ export default function Pending({ navigation, route }) {
       slug: "history",
       color: "#3E48D0",
     },
-  ]);
+  ];
 
-  const [assignment, setAssignments] = useState([
-    {
-      question: "Make a assignment on substance pressure.",
-      instructions: [
-        {
-          description:
-            " 1 Research and create a presentation on the structure and functions of plant and animal cells",
-        },
-        {
-          description:
-            " 2. Include labeled diagrams and explanations of organelles.",
-        },
-        {
-          description:
-            " 3. Submit your presentation through the app by [insertdeadline].",
-        },
-      ],
-      resources: [
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-      ],
-    },
-    {
-      question: "Solve your questions and answers on page 26.",
-      instructions: [
-        {
-          description:
-            " 1 Research and create a presentation on the structure and functions of plant and animal cells",
-        },
-        {
-          description:
-            " 2. Include labeled diagrams and explanations of organelles.",
-        },
-        {
-          description:
-            " 3. Submit your presentation through the app by [insertdeadline].",
-        },
-      ],
-      resources: [
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-      ],
-    },
-    {
-      question: "Assignment on page 43",
-      instructions: [
-        {
-          description:
-            " 1 Research and create a presentation on the structure and functions of plant and animal cells",
-        },
-        {
-          description:
-            " 2. Include labeled diagrams and explanations of organelles.",
-        },
-        {
-          description:
-            " 3. Submit your presentation through the app by [insertdeadline].",
-        },
-      ],
-      resources: [
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-        {
-          description: "Text Book",
-          link: "https://www.google.com/",
-        },
-      ],
-    },
-  ]);
+  const [subjects, setSubjects] = useState([]);
+
+  const [assignment, setAssignments] = useState([]);
 
   const [activeTab, setActiveTab] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const hexToRgba = (hex, opacity) => {
     hex = hex.replace("#", "");
@@ -180,101 +118,227 @@ export default function Pending({ navigation, route }) {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  const fetchPendingAssignments = async () => {
+    try {
+      setLoading(true);
+      const response = await post("assignments/pending-student", {
+        studentId: StudentId,
+      });
+      console.log(`pending Assignments`, response);
+      if (response?.errCode == -1) {
+        setAssignments(response?.data);
+
+        setLoading(false);
+      } else {
+        setAssignments([]);
+
+        setLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+
+      setLoading(false);
+    } finally {
+      setRefreshing(false);
+
+      setLoading(false);
+    }
+  };
+
+  const fetchSubjectList = async () => {
+    try {
+      setIsSubjectLoading(true);
+
+      const response = await post("classes/student-subject", {
+        studentId: StudentId,
+      });
+      if (response?.errCode == -1) {
+        setSubjects(response?.data);
+        setIsSubjectLoading(false);
+      } else {
+        setSubjects([]);
+        setIsSubjectLoading(false);
+      }
+    } catch (error) {
+      console.log(`error while fetching subjectList`, error);
+      setIsSubjectLoading(false);
+    } finally {
+      setRefreshing(false);
+      setIsSubjectLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subjectSelectedRedirect) {
+      console.log(`subjectDatata`, subjectData);
+      console.log(`subjectData?.id`, subjectData?.id);
+      handleSubjectSelect(subjectData?.id);
+    }
+  }, [subjectSelectedRedirect, subjectData, isFocused]); // Add dependencies to run when these values change
+
+  // Effect that runs when subjectSelectedRedirect is false
+  useEffect(() => {
+    if (!subjectSelectedRedirect) {
+      fetchPendingAssignments();
+    }
+  }, [subjectSelectedRedirect]);
+
+  useEffect(() => {
+    fetchSubjectList();
+  }, []);
+
+  const handleSubjectSelect = async (subjectId) => {
+    try {
+      setActiveTab(subjectId);
+      const response = await post(`assignments/pending-student`, {
+        studentId: StudentId,
+        subjectId: subjectId,
+      });
+
+      console.log(`subject wise Assignment`, response);
+      if (response?.errCode == -1) {
+        setAssignments(response?.data);
+      } else {
+        setAssignments([]);
+      }
+    } catch (error) {
+      console.log(`error from handleSubjectSelect`, error);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPendingAssignments();
+    fetchSubjectList();
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
-      <View style={{ marginTop: 10 }}>
-        <ScrollView showsHorizontalScrollIndicator={false} horizontal={true}>
-          {subjects.map((item, index) => {
-            return (
-              <TouchableOpacity
-                onPress={() => setActiveTab(index)}
-                key={index}
-                style={{
-                  width: 100,
-                  height: 75,
-                  backgroundColor: hexToRgba(item.color, 0.15),
-                  marginRight: 10,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderColor: item.color,
-                  borderWidth: index == activeTab ? 1 : 0,
-                }}
+      <ScrollView
+        style={{ marginTop: 10 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View>
+          {isSubjectLoading == true ? (
+            <ScrollView
+              showsHorizontalScrollIndicator={false}
+              horizontal={true}
+            >
+              <SubjectShimmerEffect />
+            </ScrollView>
+          ) : (
+            subjects?.length > 0 && (
+              <ScrollView
+                showsHorizontalScrollIndicator={false}
+                horizontal={true}
               >
-                {(() => {
-                  if (Subjects[item.slug]) {
-                    return <View>{Subjects[item.slug]()}</View>;
-                  }
-                })()}
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontSize: 14,
-                    marginTop: 6,
-                  }}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        <View style={{ marginVertical: 20 }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 16,
-              fontWeight: "bold",
-              marginTop: 6,
-              color: theme.primaryTextColor,
-              marginVertical: 20,
-            }}
-          >
-            List of Assignments
-          </Text>
-          <ScrollView
-            style={{ marginTop: 10 }}
-            showsVerticalScrollIndicator={true}
-          >
-            {assignment.map((item, index) => {
-              return (
-                <View key={index} style={{ marginVertical: 10 }}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("AssignmentDisplay", {
-                        subject: subjects[activeTab],
-                        assignment: item,
-                      })
-                    }
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      width: "90%",
-                    }}
-                  >
-                    <Text
+                {subjects?.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => handleSubjectSelect(item?.id)}
+                      key={index}
                       style={{
-                        fontSize: 12,
-                        fontWeight: "semibold",
-                        width: "90%",
-                        color: theme.primarycolor,
+                        width: 100,
+                        height: 75,
+                        backgroundColor: hexToRgba(item?.colorCode, 0.15),
+                        marginRight: 10,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderColor: item.color,
+                        borderWidth: item?.id == activeTab ? 1 : 0,
                       }}
                     >
-                      {item.question}
-                    </Text>
-                    <Entypo
-                      name="chevron-right"
-                      size={20}
-                      color={theme.primarycolor}
-                    />
-                  </TouchableOpacity>
-                  <Divider style={{ marginTop: 10, marginBottom: 10 }} />
-                </View>
-              );
-            })}
-          </ScrollView>
+                      {/* {(() => {
+                        if (Subjects[item?.slug]) {
+                          return <View>{Subjects[item?.slug]()}</View>;
+                        }
+                      })()} */}
+                      {item?.svg != null && (
+                        <SvgRenderer svgContent={`${item.svg}`} />
+                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 14,
+                          marginTop: 6,
+                        }}
+                      >
+                        {item?.subjectName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )
+          )}
         </View>
-      </View>
+        <View style={{ marginVertical: 20 }}>
+          {isLoading == true ? (
+            <View>
+              <AssignmentShimmerEffect />
+            </View>
+          ) : (
+            <View>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginTop: 6,
+                  color: theme.primaryTextColor,
+                  marginVertical: 20,
+                }}
+              >
+                List of Assignments
+              </Text>
+              <ScrollView
+                style={{ marginTop: 10 }}
+                showsVerticalScrollIndicator={true}
+              >
+                {assignment?.map((item, index) => {
+                  return (
+                    <View key={index} style={{ marginVertical: 10 }}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("AssignmentDisplay", {
+                            subject: subjects[activeTab],
+                            assignment: item,
+                          })
+                        }
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          width: "90%",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "semibold",
+                            width: "90%",
+                            color: theme.primarycolor,
+                          }}
+                        >
+                          {item?.name}
+                        </Text>
+                        <Entypo
+                          name="chevron-right"
+                          size={20}
+                          color={theme.primarycolor}
+                        />
+                      </TouchableOpacity>
+                      <Divider style={{ marginTop: 10, marginBottom: 10 }} />
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

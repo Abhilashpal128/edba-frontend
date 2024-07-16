@@ -20,35 +20,37 @@ const config = {
 //     console.log(`errorerror`, error);
 //   }
 // };
-export const EventsAndNotices = async (url) => {
-  console.log(`hiiii`);
-  try {
-    const response = await axios.get(`${apiUrl}/${url}`, config);
+// export const EventsAndNotices = async (url) => {
+//   console.log(`hiiii`);
+//   try {
+//     const response = await axios.get(`${apiUrl}/${url}`, config);
 
-    // console.log(response);
-    // const responseJson = await response.json();
-    console.log(`responseJsonresponseJson`, response.data);
-    return response.data;
-  } catch (error) {
-    console.log(`error`, error);
-  }
-};
+//     // console.log(response);
+//     // const responseJson = await response.json();
+//     console.log(`responseJsonresponseJson`, response?.data);
+//     return response?.data;
+//   } catch (error) {
+//     console.log(`error`, error);
+//   }
+// };
 
-export const todaysClasses = async () => {
-  try {
-    const response = await axios.get(apitimetableUrl, config);
-    console.log(response.status);
-    return response.data;
-  } catch (error) {}
-};
+// export const todaysClasses = async () => {
+//   try {
+//     x;
+//     const response = await axios.get(apitimetableUrl, config);
+//     console.log(response?.status);
+//     return response?.data;
+//   } catch (error) {}
+// };
 
 export const get = async (url) => {
   try {
+    console.log(`${apiUrl}/${url}`);
     const response = await axios.get(`${apiUrl}/${url}`, config);
-    console.log(`GetFunctionResponse`, response.data);
-    return response.data;
+    console.log(`GetFunctionResponse`, response?.data);
+    return response?.data;
   } catch (error) {
-    console.log(error.message);
+    console.log(error?.message);
   }
 };
 
@@ -61,7 +63,7 @@ export const post = async (url, data) => {
       ...config,
       data: data,
     });
-    return response.data;
+    return response?.data;
   } catch (error) {
     console.log(error.message);
     return error;

@@ -79,7 +79,7 @@ export default function ClassExchange({
       console.log(`value`, value);
       setSelectedTeacher(value);
       const response = await post("timetable/search", {
-        teacher: value,
+        teacherId: value,
         date: date,
       });
       // console.log(`classExchange response`, response);
@@ -132,44 +132,44 @@ export default function ClassExchange({
   }, [isFocused]);
 
   const handleExchangeRequest = async () => {
-    // const fromTimeId = classDetail?.id;
-    // const toTimeId = selectedclassforExchange?.id;
-    // const fromTeacherId = user?.teacherId;
-    // const toTeacherId = selectedTeacher;
-    // const postData = { fromTeacherId, toTeacherId, fromTimeId, toTimeId };
-    // try {
-    //   const response = await post("timetable/request-exchange", postData);
-    //   if (response?.errCode == -1) {
-    //     Alert.alert("Exchange request sent");
-    //     setClassDetailTab(false);
-    //   } else {
-    //     Alert.alert(
-    //       response?.errMsg ? response.errMsg : "error while sending request"
-    //     );
-    //   }
-    // } catch (error) {
-    //   console.log(error);
-    // }
-
-    const requesterId = "112233";
-    const receiverId = "Abhi23";
-    // const receiversExpoToken = "ExponentPushToken[Amz3nKAOk6ffg70kSeuLjS]";
-
+    const fromTimeId = classDetail?.id;
+    const toTimeId = selectedclassforExchange?.id;
+    const fromTeacherId = user?.teacherId;
+    const toTeacherId = selectedTeacher;
+    const postData = { fromTeacherId, toTeacherId, fromTimeId, toTimeId };
     try {
-      const response = await axios.post(
-        `http://192.168.1.167:3000/exchange/request`,
-        {
-          requesterId,
-          receiverId,
-          receiversExpoToken: selectedNotificationForTeacher,
-        }
-      );
-      console.log("Request sent successfully:", response.data);
-      return response.data; // Handle response as needed
+      const response = await post("timetable/request-exchange", postData);
+      if (response?.errCode == -1) {
+        Alert.alert("Exchange request sent");
+        setClassDetailTab(false);
+      } else {
+        Alert.alert(
+          response?.errMsg ? response.errMsg : "error while sending request"
+        );
+      }
     } catch (error) {
-      console.error("Error requesting class exchange:", error);
-      throw error; // Handle error appropriately
+      console.log(error);
     }
+
+    // const requesterId = "112233";
+    // const receiverId = "Abhi23";
+    // // const receiversExpoToken = "ExponentPushToken[Amz3nKAOk6ffg70kSeuLjS]";
+
+    // try {
+    //   const response = await axios.post(
+    //     `http://192.168.1.167:3000/exchange/request`,
+    //     {
+    //       requesterId,
+    //       receiverId,
+    //       receiversExpoToken: selectedNotificationForTeacher,
+    //     }
+    //   );
+    //   console.log("Request sent successfully:", response.data);
+    //   return response.data; // Handle response as needed
+    // } catch (error) {
+    //   console.error("Error requesting class exchange:", error);
+    //   throw error; // Handle error appropriately
+    // }
   };
 
   return (
@@ -337,7 +337,7 @@ export default function ClassExchange({
               useNativeAndroidPickerStyle={false}
             />
           </View>
-          <RNPickerSelect
+          {/* <RNPickerSelect
             onValueChange={(value) => {
               setSelectedNotificationForTeacher(value);
             }}
@@ -378,7 +378,7 @@ export default function ClassExchange({
             )}
             value={selectedTeacher} // Make sure selectedTeacher matches one of the value in items
             useNativeAndroidPickerStyle={false}
-          />
+          /> */}
           {/* <View style={{ marginVertical: 10 }}>
             <View
               style={{

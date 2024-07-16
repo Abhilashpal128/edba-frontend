@@ -2,6 +2,7 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -9,7 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { calculateDuration } from "../../../Helper/helper";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { FontAwesome } from "react-native-vector-icons";
@@ -25,6 +32,7 @@ export default function SingleNoticeEvent({ navigation, route }) {
   const [selectedDocument, setselectedDocument] = useState([]);
   const [fileType, setFileType] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   console.log(`EventNotice`, EventNotice);
   const refRBSheet = useRef();
@@ -144,6 +152,8 @@ export default function SingleNoticeEvent({ navigation, route }) {
     }
   };
 
+  const onRefresh = useCallback(() => {}, []);
+
   useEffect(() => {
     // fetchFileType(item?.url);
     let FileTypeArray = [];
@@ -162,7 +172,12 @@ export default function SingleNoticeEvent({ navigation, route }) {
         backgroundColor: theme.backgroundColor,
       }}
     >
-      <ScrollView style={{ width: "100%" }}>
+      <ScrollView
+        style={{ width: "100%" }}
+        refreshControl={
+          <RefreshControl onRefresh={onRefresh} refreshing={refreshing} />
+        }
+      >
         <View style={{ marginHorizontal: "auto", width: "90%" }}>
           <View
             style={[
@@ -276,8 +291,8 @@ export default function SingleNoticeEvent({ navigation, route }) {
         </View>
         {details?.documents?.length > 0 && (
           <View>
-            {details?.documents.map((item) => (
-              <View>
+            {details?.documents.map((item, index) => (
+              <View key={index}>
                 {fileType == "image" && (
                   <View style={{}}>
                     <View style={{ marginHorizontal: 20, marginTop: 10 }}>
@@ -317,9 +332,7 @@ export default function SingleNoticeEvent({ navigation, route }) {
                   </View>
                 )}
                 {fileType == null && (
-                  <View>
-                    <Text>Unknown file</Text>
-                  </View>
+                  <View>{/* <Text>Unknown file</Text> */}</View>
                 )}
               </View>
             ))}

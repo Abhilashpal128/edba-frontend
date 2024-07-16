@@ -18,20 +18,18 @@ import { post } from "../../../utils/apis/TeacherApis/login";
 import { useSelector } from "react-redux";
 // import { theme } from "../../../theming";
 
-export default function TodayAttendance({
-  GraphData,
-  isLoading,
-  setIsLoading,
-}) {
+export default function TodayAttendance({ GraphData }) {
   const { theme } = useThemeContext();
   const TodaysDate = new Date();
   const [date, setDate] = useState(TodaysDate);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
   const user = useSelector((state) => state?.login?.user);
+  console.log(`userDatat`, user);
   const TeacherId = user?.teacherId;
   const isFocused = useIsFocused();
-  const [ptData, setPtData] = useState([]);
+  const [ptData, setPtData] = useState([{ value: 0, label: "12B" }]);
   // const ptData = GraphData;
 
   const screenWidth = Dimensions.get("window").width;
@@ -62,6 +60,21 @@ export default function TodayAttendance({
   //   label: item.className,
   // }));
 
+  const chartConfig = {
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    color: (opacity = 1) => theme.primaryColor,
+    labelColor: (opacity = 1) => theme.primaryTextColor,
+    style: {
+      borderRadius: 16,
+    },
+    propsForDots: {
+      r: "6",
+      strokeWidth: "2",
+      stroke: "#ffa726",
+    },
+  };
+
   const chartWidth = Math.max(
     screenWidth,
     (screenWidth / 2) * sortedClassData.length
@@ -81,15 +94,40 @@ export default function TodayAttendance({
       date: formatedDate,
     });
     if (response?.errCode == -1) {
-      const sortedClassData = response?.data?.sort(
-        (a, b) => b.presentCount - a.presentCount
-      );
-      const Graphdata = sortedClassData.map((item) => ({
-        value: item.presentCount,
-        label: item.className,
-      }));
-
-      setPtData(Graphdata);
+      // const sortedClassData = response?.data?.sort(
+      //   (a, b) => b.presentCount - a.presentCount
+      // );
+      // if (sortedClassData) {
+      //   const Graphdata = sortedClassData.map((item) => ({
+      //     value: item?.presentCount,
+      //     label: item.className,
+      //   }));
+      //   setPtData(Graphdata);
+      // }
+      if (response?.data.length > 0) {
+        // const graphData = {
+        //   labels: response?.data?.map((item) => item.className), // X-axis labels
+        //   datasets: [
+        //     {
+        //       data: response?.data?.map((item) => item.presentCount), // Y-axis data
+        //       color: () => "#FF0000", // Custom color function
+        //     },
+        //   ],
+        // };
+        // console.log(`graphData`, graphData);
+        // setPtData(graphData);
+        const convertToGraphData = (data) => {
+          return data.map((item) => ({
+            value: item.presentCount, // Use the presentCount as the value
+            label: item.className, // Use the className as the label
+          }));
+        };
+        const graphData = convertToGraphData(response?.data);
+        setPtData(graphData);
+        console.log(`graphData`, graphData);
+      } else {
+        setPtData([{ value: 0, label: "" }]);
+      }
     }
   };
 
@@ -145,7 +183,7 @@ export default function TodayAttendance({
         >
           Student’s Attendance
         </Text>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => {
             navigation.navigate("Attendence");
           }}
@@ -159,7 +197,7 @@ export default function TodayAttendance({
           >
             Take Attendance
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       <View
         style={{
@@ -168,42 +206,44 @@ export default function TodayAttendance({
           justifyContent: "flex-end",
         }}
       >
-        <TouchableOpacity
-          onPress={() => setIsDatePickerVisible(true)}
-          style={{
-            borderWidth: 1,
-            borderColor: theme.primarycolor,
-            padding: 6,
-            borderRadius: 8,
-            marginBottom: 30,
-            marginTop: 16,
-          }}
-        >
-          <View
+        {ptData.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setIsDatePickerVisible(true)}
             style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
+              borderWidth: 1,
+              borderColor: theme.primarycolor,
+              padding: 6,
+              borderRadius: 8,
+              marginBottom: 30,
+              marginTop: 16,
             }}
           >
-            <Text
+            <View
               style={{
-                fontSize: 12,
-                color: theme.primaryTextColor,
-                marginRight: 8,
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 2,
               }}
             >
-              {moment(date).format("D MMM YYYY")}
-            </Text>
-            <AntDesign
-              name="calendar"
-              size={18}
-              color={theme.primaryTextColor}
-            />
-          </View>
-        </TouchableOpacity>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: theme.primaryTextColor,
+                  marginRight: 8,
+                }}
+              >
+                {moment(date).format("D MMM YYYY")}
+              </Text>
+              <AntDesign
+                name="calendar"
+                size={18}
+                color={theme.primaryTextColor}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
       <ScrollView horizontal={true}>
         {/* <LineChart
@@ -281,37 +321,133 @@ export default function TodayAttendance({
             },
           }}
         /> */}
+        {/* {ptData.length > 0 ? (
+          <LineChart
+            areaChart
+            curved
+            data={ptData}
+            width={chartWidth}
+            height={220}
+            chartConfig={{
+              backgroundGradientFrom: "#ffffff",
+              backgroundGradientTo: "#ffffff",
+              color: (opacity = 1) => theme.primarycolor,
+              labelColor: (opacity = 1) => theme.primaryTextColor,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: "6",
+                strokeWidth: "2",
+                stroke: "#ffa726",
+              },
+            }}
+            color1={theme.primarycolor}
+            startFillColor1={theme.primarycolor}
+            endFillColor1="#DADEFF"
+            startOpacity={0.9}
+            endOpacity={0.1}
+            yAxisColor={theme.primaryTextColor}
+            yAxisThickness={0}
+            yAxisMinValue={0}
+            initialSpacing={25} // Dynamically adjust spacing
+            yAxisTextStyle={{ color: theme.primaryTextColor }}
+            noOfSections={3}
+            yAxisLabelSuffix=""
+            xAxisColor={theme.primaryTextColor}
+            xAxisLabelTextStyle={{
+              color: theme.primaryTextColor,
+              fontSize: 12,
+              rotation: 0,
+            }} // Adjust as needed
+            pointerConfig={{
+              pointerStripUptoDataPoint: true,
+              pointerStripColor: theme.primaryTextColor,
+              pointerStripWidth: 2,
+              strokeDashArray: [2, 5],
+              pointerColor: "transparent",
+              radius: 4,
+              pointerLabelWidth: 100,
+              pointerLabelHeight: 120,
+              pointerLabelComponent: (items) => {
+                return (
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.primarycolor,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        padding: 8,
+                        backgroundColor: hexToRgba(theme.primarycolor, 0.05),
+                      }}
+                    >
+                      <Text
+                        style={{
+                          textAlign: "center",
+                          color: theme.primaryTextColor,
+                          fontSize: 14,
+                        }}
+                      >
+                        {moment(date).format("DD MMMM YYYY")}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          textAlign: "center",
+                          color: theme.primaryTextColor,
+                          fontSize: 14,
+                        }}
+                      >
+                        {items ? parseInt(items[0]["value"]) : 0} Present
+                      </Text>
+                    </View>
+                  </View>
+                );
+              },
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: "red",
+            }}
+          >
+            <Text style={{ textAlign: "center" }}>No Record found</Text>
+          </View>
+        )} */}
         <LineChart
           areaChart
           curved
           data={ptData}
-          width={chartWidth}
+          width={screenWidth}
           height={220}
-          chartConfig={{
-            backgroundGradientFrom: "#ffffff",
-            backgroundGradientTo: "#ffffff",
-            color: (opacity = 1) => theme.primarycolor,
-            labelColor: (opacity = 1) => theme.primaryTextColor,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#ffa726",
-            },
-          }}
-          color1={theme.primarycolor}
-          startFillColor1={theme.primarycolor}
+          chartConfig={chartConfig}
+          color1={theme.primaryColor}
+          startFillColor1={theme.primaryColor}
           endFillColor1="#DADEFF"
           startOpacity={0.9}
           endOpacity={0.1}
           yAxisColor={theme.primaryTextColor}
           yAxisThickness={0}
-          initialSpacing={25} // Dynamically adjust spacing
+          yAxisMinValue={0}
+          initialSpacing={25}
           yAxisTextStyle={{ color: theme.primaryTextColor }}
           noOfSections={3}
-          yAxisLabelSuffix=""
           xAxisColor={theme.primaryTextColor}
           xAxisLabelTextStyle={{
             color: theme.primaryTextColor,
@@ -332,14 +468,14 @@ export default function TodayAttendance({
                 <View
                   style={{
                     borderWidth: 1,
-                    borderColor: theme.primarycolor,
+                    borderColor: theme.primaryColor,
                     borderRadius: 8,
                   }}
                 >
                   <View
                     style={{
                       padding: 8,
-                      backgroundColor: hexToRgba(theme.primarycolor, 0.05),
+                      backgroundColor: hexToRgba("#2B78CA", 0.05),
                     }}
                   >
                     <Text
@@ -367,7 +503,7 @@ export default function TodayAttendance({
                         fontSize: 14,
                       }}
                     >
-                      {items[0]["value"]} Present
+                      {items ? parseInt(items[0]["value"]) : 0} Present
                     </Text>
                   </View>
                 </View>
@@ -375,6 +511,7 @@ export default function TodayAttendance({
             },
           }}
         />
+
         {/* <View style={{ marginBottom: 40 }} />
         <DateTimePickerModal
           isVisible={isDatePickerVisible}

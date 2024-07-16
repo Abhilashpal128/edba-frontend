@@ -24,7 +24,8 @@ import HelpSupport from "../screens/common/Helpsupport";
 import ResetPassword from "../screens/common/ResetPassword";
 import Settings from "../screens/common/Settings";
 import DigitalId from "../screens/student/DigitalId";
-import PersonalDetail from "../screens/common/PersonalDetail";
+import SingleNoticeEvent from "../screens/common/NoticesEvents/SingleNoticeEvent";
+import PersonalDetail from "../screens/student/PersonalDetail";
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -49,6 +50,7 @@ const StudentStack = () => {
       <Stack.Screen name="AssignmentDisplay" component={AssignmentDisplay} />
       <Stack.Screen name="AttendenceDisplay" component={AttendenceDisplay} />
       <Stack.Screen name="PersonalDetail" component={PersonalDetail} />
+      <Stack.Screen name="singleNotice" component={SingleNoticeEvent} />
       <Stack.Screen
         name="CompletedAssignment"
         component={DisplayComletedAssignment}

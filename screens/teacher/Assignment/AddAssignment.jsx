@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import axios from "axios";
@@ -57,10 +58,12 @@ export default function AddAssignment() {
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const TodaysDate = new Date();
   const [submissionDate, setSubmissionDate] = useState(TodaysDate);
+  const [isLoading, setIsloading] = useState(false);
   const [fileUri, setFileUri] = useState(null);
   const [fileType, setFileType] = useState(null);
   const [fileName, setFileName] = useState(null);
   const [deductionMarks, setDeductionMarks] = useState(0);
+  const [documents, setDocuments] = useState([]);
   const user = useSelector((state) => state.login.user);
   const TeacherId = user?.teacherId;
   const isFocused = useIsFocused();
@@ -77,6 +80,10 @@ export default function AddAssignment() {
   const s3 = new AWS.S3();
 
   const acceptableFileTypes = ["application/pdf", "image/*"];
+
+  const removeFile = (index) => {
+    setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -153,118 +160,162 @@ export default function AddAssignment() {
 
   const onSubmit = async (data) => {
     try {
+      setIsloading(true);
       // const formData = new FormData();
 
       console.log(`Add Assignment Data`, data);
       console.log(`date`, submissionDate);
-      // Alert.alert(JSON.stringify(data));
 
       const UploadDocumentTos3 = async () => {
-        // const s3 = new S3({
-        //   accessKeyId: "AKIAZQ3DTDYZMSHJC7JR",
-        //   secretAccessKey: "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",
-        //   region: "ap-south-1",
-        // });
-        // console.log(`here fetching image blob`);
-        // console.log(fileUri);
-        // const fileContents = await FileSystem.readAsStringAsync(fileUri, {
-        //   encoding: FileSystem.EncodingType.Base64,
-        // });
-        // Create a Blob from the base64 data
-        // const response = await fetch(uri);
-        // const blob = await response.blob();
-        // console.log(`bolob Reasponse `, blob);
-        // Convert the Base64 string to a buffer
-        // const buffer = Buffer.from(fileContents, "base64");
-        // console.log(`buffer`, buffer);
-        // const params = {
-        //   Bucket: "edba-dev-bucket",
-        //   key: `Assignments/${fileName}`,
-        //   body: buffer,
-        //   ContentType: fileType,
-        // };
-        // s3.upload(params, (err, data) => {
-        //   if (err) {
-        //     console.error("Error uploading document:", err);
-        //     Alert.alert("Upload Failed", "Error uploading document");
-        //   } else {
-        //     console.log("Document uploaded successfully:", data.Location);
-        //     Alert.alert("Upload Successful", `Document URL: ${data.Location}`);
-        //     // Optionally, send the document link to your API
-        //     // await axios.post('http://your-api-url/receive-document-link', {
-        //     //   fileUrl: data.Location,
-        //     // });
-        //   }
-        // });
-        // new mwthod4
-
         try {
-          if (fileUri) {
-            const fileContents = await FileSystem.readAsStringAsync(fileUri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
+          const uploadTasks = documents.map(async (document) => {
+            const fileContents = await FileSystem.readAsStringAsync(
+              document.uri,
+              {
+                encoding: FileSystem.EncodingType.Base64,
+              }
+            );
 
             const buffer = Buffer.from(fileContents, "base64");
 
             const params = {
               Bucket: "edba-dev-bucket",
-              Key: `Assignments/${fileName}`,
+              Key: `Assignments/${document.name}`,
               Body: buffer,
-              ContentType: fileType,
+              ContentType: document.mimeType,
             };
 
-            var Document = await s3.upload(params).promise(); // Wait for the upload to complete
+            const uploadedDocument = await s3.upload(params).promise();
 
-            console.log("Document uploaded successfully:", Document.Key);
-          }
+            console.log(
+              "Document uploaded successfully:",
+              uploadedDocument.Key
+            );
 
-          // Alert.alert("Upload Successful", `Document URL: ${Document.Location}`);
-          try {
-            const postData = {
-              ...data,
-              teacher: TeacherId,
-              submissionDate: submissionDate,
-              documents: [
-                {
-                  key: Document?.Key,
-                  url: Document?.Location,
-                  label: fileName,
-                },
-              ],
+            return {
+              key: uploadedDocument.Key,
+              url: uploadedDocument.Location,
+              label: document.name,
             };
-            console.log(`data`, postData);
+          });
 
-            const response = await post("assignments/create", postData);
-            if (response?.errCode == -1) {
-              Alert.alert("Assignment Created Successfully");
-              navigation.navigate("Assignments");
-            } else {
-              Alert.alert(
-                response?.errMsg
-                  ? JSON.stringify(response?.errMsg)
-                  : "Error creating assignment"
-              );
-            }
-          } catch (error) {
-            console.log(error);
-          }
-
-          // Optionally, send the document link to your API
-          // await axios.post('http://your-api-url/receive-document-link', {
-          //   fileUrl: data.Location,
-          // });
-
-          return data.Location; // Return the uploaded document URL
+          const uploadedDocuments = await Promise.all(uploadTasks);
+          return uploadedDocuments;
         } catch (error) {
-          console.error("Error uploading document:", error);
-          Alert.alert("Upload Failed", "Error uploading document");
+          setIsloading(false);
+          console.error("Error uploading documents:", error);
+          Alert.alert("Upload Failed", "Error uploading documents");
           throw error; // Throw the error to handle it further if needed
+        } finally {
+          setIsloading(false);
         }
       };
 
+      const docs = await UploadDocumentTos3();
+      console.log(`docs`, docs);
+
+      try {
+        const postData = {
+          ...data,
+          teacher: TeacherId,
+          submissionDate: submissionDate,
+          documents: docs,
+        };
+        console.log(`Submitted Assignment data`, postData);
+
+        const response = await post("assignments/create", postData);
+        if (response?.errCode == -1) {
+          Alert.alert("Assignment Created Successfully");
+          navigation.navigate("Assignments");
+        } else {
+          Alert.alert(
+            response?.errMsg
+              ? JSON.stringify(response?.errMsg)
+              : "Error creating assignment"
+          );
+        }
+      } catch (error) {
+        console.log(error);
+        setIsloading(false);
+      } finally {
+        setIsloading(false);
+      }
+
+      // Alert.alert(JSON.stringify(data));
+
+      // const UploadDocumentTos3 = async (document) => {
+      //   try {
+      //     const fileContents = await FileSystem.readAsStringAsync(
+      //       document?.uri,
+      //       {
+      //         encoding: FileSystem.EncodingType.Base64,
+      //       }
+      //     );
+
+      //     const buffer = Buffer.from(fileContents, "base64");
+
+      //     const params = {
+      //       Bucket: "edba-dev-bucket",
+      //       Key: `Assignments/${document?.name}`,
+      //       Body: buffer,
+      //       ContentType: document?.mimeType,
+      //     };
+
+      //     var uploadedDocument = await s3.upload(params).promise(); // Wait for the upload to complete
+      //     return {
+      //       key: uploadedDocument.Key,
+      //       url: uploadedDocument.Location,
+      //       label: document.name,
+      //     };
+
+      //     console.log("Document uploaded successfully:", Document.Key);
+
+      //     // Alert.alert("Upload Successful", `Document URL: ${Document.Location}`);
+
+      //     // Optionally, send the document link to your API
+      //     // await axios.post('http://your-api-url/receive-document-link', {
+      //     //   fileUrl: data.Location,
+      //     // });
+
+      //     // return data.Location;
+      //   } catch (error) {
+      //     console.error("Error uploading document:", error);
+      //     Alert.alert("Upload Failed", "Error uploading document");
+      //     throw error; // Throw the error to handle it further if needed
+      //   }
       // };
 
-      UploadDocumentTos3();
+      // };
+
+      // try {
+      //   const postData = {
+      //     ...data,
+      //     teacher: TeacherId,
+      //     submissionDate: submissionDate,
+      //     documents: [
+      //       {
+      //         key: Document?.Key,
+      //         url: Document?.Location,
+      //         label: fileName,
+      //       },
+      //     ],
+      //   };
+      //   console.log(`Submitted Assignment data`, postData);
+
+      //   const response = await post("assignments/create", postData);
+      //   if (response?.errCode == -1) {
+      //     Alert.alert("Assignment Created Successfully");
+      //     navigation.navigate("Assignments");
+      //   } else {
+      //     Alert.alert(
+      //       response?.errMsg
+      //         ? JSON.stringify(response?.errMsg)
+      //         : "Error creating assignment"
+      //     );
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      // }
 
       // formData.append("file", {
       //   uri: fileUri,
@@ -352,53 +403,74 @@ export default function AddAssignment() {
   };
 
   const pickFile = async () => {
-    // DocumentPicker;
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: "*/*", // all files
         copyToCacheDirectory: false,
       });
 
-      console.log(`result`, result);
-
       if (result.type !== "cancel") {
-        // Check if user didn't cancel
-        console.log("Result:", result);
-
         const { uri, mimeType, name } = result.assets[0];
-
-        // const fileInfo = await FileSystem.getInfoAsync(uri);
-        // console.log(`fileInfo.uri`, fileInfo);
-        // console.log(`URLIMage`, URLIMage);
-        console.log("URI:", uri);
-        console.log("Type:", mimeType);
-        console.log("Name:", name);
-
-        // const res = await RNFetchBlob.fs.readFile(file.uri, "base64");
-        // const blob = new Blob([Buffer.from(res, "base64")], {
-        //   type: file.type,
-        // });
-        // console.log(`blob blob`, blob);
-        setFileUri(uri);
-        setFileType(mimeType);
-        setFileName(name);
-
-        // Create a Blob from the base64 data
-
-        // const response = await fetch(uri);
-        // const blob = await response.blob();
-        // console.log(`bolob Reasponse `, blob);
-
-        // Convert the Base64 string to a buffer
-
-        // console.log(`blobb`, blob);
+        setDocuments((prevDocs) => [...prevDocs, { uri, mimeType, name }]);
       } else {
         console.log("User cancelled the picker");
       }
     } catch (error) {
       console.log("Error picking file", error);
+      Alert.alert("Error", "Could not pick the document");
     }
   };
+
+  console.log(`documents`, documents?.assets);
+
+  // const pickFile = async () => {
+  //   // DocumentPicker;
+  //   try {
+  //     const result = await DocumentPicker.getDocumentAsync({
+  //       type: "*/*", // all files
+  //       copyToCacheDirectory: false,
+  //     });
+
+  //     console.log(`result`, result);
+
+  //     if (result.type !== "cancel") {
+  //       // Check if user didn't cancel
+  //       console.log("Result:", result);
+
+  //       const { uri, mimeType, name } = result.assets[0];
+
+  //       // const fileInfo = await FileSystem.getInfoAsync(uri);
+  //       // console.log(`fileInfo.uri`, fileInfo);
+  //       // console.log(`URLIMage`, URLIMage);
+  //       console.log("URI:", uri);
+  //       console.log("Type:", mimeType);
+  //       console.log("Name:", name);
+
+  //       // const res = await RNFetchBlob.fs.readFile(file.uri, "base64");
+  //       // const blob = new Blob([Buffer.from(res, "base64")], {
+  //       //   type: file.type,
+  //       // });
+  //       // console.log(`blob blob`, blob);
+  //       setFileUri(uri);
+  //       setFileType(mimeType);
+  //       setFileName(name);
+
+  //       // Create a Blob from the base64 data
+
+  //       // const response = await fetch(uri);
+  //       // const blob = await response.blob();
+  //       // console.log(`bolob Reasponse `, blob);
+
+  //       // Convert the Base64 string to a buffer
+
+  //       // console.log(`blobb`, blob);
+  //     } else {
+  //       console.log("User cancelled the picker");
+  //     }
+  //   } catch (error) {
+  //     console.log("Error picking file", error);
+  //   }
+  // };
 
   const handleClassChange = async (value) => {
     try {
@@ -418,6 +490,22 @@ export default function AddAssignment() {
       }
     } catch (error) {}
   };
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size={"large"} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -793,7 +881,63 @@ export default function AddAssignment() {
             This field is required
           </Text>
         )} */}
-        <View
+
+        <View style={{ padding: 20 }}>
+          <ScrollView style={{ marginTop: 20 }}>
+            {documents.length > 0 &&
+              documents.map((file, index) => (
+                <View
+                  key={index}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: "#EAF1FA",
+                    padding: 10,
+                    borderRadius: 5,
+                    marginBottom: 10,
+                  }}
+                >
+                  <Text style={{ color: "#666666", flex: 1 }}>{file.name}</Text>
+                  <TouchableOpacity onPress={() => removeFile(index)}>
+                    <FontAwesome name="trash" size={16} color="red" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+          </ScrollView>
+
+          <View
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              marginRight: 10,
+              marginTop: 10,
+            }}
+          >
+            <TouchableOpacity
+              onPress={pickFile}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#EAF1FA",
+                width: "50%",
+                height: 40,
+                borderRadius: 5,
+                gap: 4,
+              }}
+            >
+              <FontAwesome name="upload" size={16} color="#666666" />
+              <Text style={{ color: theme.primaryTextColor }}>
+                Add Document
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* <View
           style={{
             display: "flex",
             flexDirection: "row",
@@ -821,8 +965,8 @@ export default function AddAssignment() {
               {fileName == null ? "Upload Document" : "Change Document"}
             </Text>
           </TouchableOpacity>
-        </View>
-        {fileName == null ? (
+        </View> */}
+        {/* {fileName == null ? (
           ""
         ) : (
           <Text
@@ -834,7 +978,7 @@ export default function AddAssignment() {
           >
             {fileName}
           </Text>
-        )}
+        )} */}
         <View>
           <Text>Submission Date</Text>
         </View>

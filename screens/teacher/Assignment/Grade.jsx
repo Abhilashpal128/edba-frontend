@@ -305,7 +305,7 @@ export default function Grade({ navigation, route }) {
     //     );
     //   },
     // });
-  }, [navigation, selectedStudentassignGrade,theme]);
+  }, [navigation, selectedStudentassignGrade, theme]);
 
   const handleStudentsAssignmentGrade = (data) => {
     setIsOpenAssignGradeTab(true);
@@ -506,7 +506,7 @@ export default function Grade({ navigation, route }) {
             />
           </View>
           <View style={{ marginTop: 20 }}>
-            {StudentList.length > 0 && (
+            {StudentList?.length > 0 && (
               <View>
                 {/* Table Header */}
                 <View

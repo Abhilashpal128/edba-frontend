@@ -36,7 +36,7 @@ const EventsData = [
   },
 ];
 
-export default function NoticesEvents({ Events, isLoading, setIsLoading }) {
+export default function NoticesEvents({ Events, isLoading }) {
   // const [isLoading, setIsLoading] = useState(true);
   const { theme } = useThemeContext();
 

@@ -9,25 +9,51 @@ import React, { useEffect, useLayoutEffect, useState } from "react";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { Ionicons, Feather } from "react-native-vector-icons";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/StudentApis";
+import moment from "moment";
 
-const AttendenceData = [
-  { subjectName: "English", AttendedLecture: 25, Totallectures: 30 },
-  { subjectName: "Hindi", AttendedLecture: 15, Totallectures: 30 },
-  { subjectName: "Marathi", AttendedLecture: 0, Totallectures: 30 },
-  { subjectName: "Science", AttendedLecture: 10, Totallectures: 30 },
-  { subjectName: "Geography", AttendedLecture: 25, Totallectures: 30 },
-  { subjectName: "History", AttendedLecture: 20, Totallectures: 30 },
-  { subjectName: "Math", AttendedLecture: 30, Totallectures: 30 },
-];
+const AttendenceData = [];
 
-export default function AttendenceDisplay({ navigation }) {
+export default function AttendenceDisplay({ navigation, route }) {
   const [attendence, setAttendence] = useState([]);
-
+  const [totalLectures, setTotalLectures] = useState(0);
+  const [attendedLecture, setAttendedLectures] = useState(0);
+  const data = route?.params;
+  console.log(`route?.params`, data);
+  const startDate = moment(data?.startDate)
+    .startOf("month")
+    .format("YYYY-MM-DD");
   const { theme } = useThemeContext();
 
   useEffect(() => {
     setAttendence(AttendenceData);
+    fetchAttendenceData();
   }, []);
+
+  const fetchAttendenceData = async () => {
+    try {
+      const response = await post("attendences/month-all-subject", {
+        classId: data?.class[0]?.id,
+        startDate: startDate,
+        studentId: data?.studentId,
+      });
+      if (response?.errCode == -1) {
+        setAttendence(response?.data);
+        let totalDaysSum = 0;
+        let attended = 0;
+        response?.data?.filter((item) => {
+          totalDaysSum += parseInt(item?.totalDays);
+          attended += parseInt(item?.totalPresent);
+        });
+        setTotalLectures(totalDaysSum);
+        setAttendedLectures(attended);
+      } else {
+        setAttendence([]);
+      }
+    } catch (error) {
+      console.log(`error from fetchAttendenceData`, error);
+    }
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -86,7 +112,7 @@ export default function AttendenceDisplay({ navigation }) {
                   justifyContent: "flex-end",
                 }}
               >
-               <TouchableOpacity
+                <TouchableOpacity
                   onPress={() => {
                     navigation.navigate("Notification");
                   }}
@@ -103,7 +129,7 @@ export default function AttendenceDisplay({ navigation }) {
         );
       },
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   return (
     <SafeAreaView
@@ -130,14 +156,20 @@ export default function AttendenceDisplay({ navigation }) {
               flexDirection: "row",
               alignItems: "center",
               marginVertical: 10,
+              gap: 10,
             }}
           >
             <Text>Overall : </Text>
-            <Text>80% (150/200)</Text>
+            <Text>
+              {Math.round(
+                (parseInt(attendedLecture) / parseInt(totalLectures)) * 100
+              )}
+              %
+            </Text>
+            <Text>
+              {totalLectures}/{attendedLecture}
+            </Text>
           </View>
-          <TouchableOpacity>
-            <Feather name="calendar" size={20} />
-          </TouchableOpacity>
         </View>
         <View style={{ width: "100%", display: "flex", flexDirection: "row" }}>
           <View style={{ width: "50%" }}>
@@ -220,7 +252,7 @@ export default function AttendenceDisplay({ navigation }) {
                         color: "#FFFFFF",
                       }}
                     >
-                      {item.subjectName}
+                      {item?.subjectName}
                     </Text>
                   </View>
 
@@ -241,7 +273,9 @@ export default function AttendenceDisplay({ navigation }) {
                       }}
                     >
                       {Math.round(
-                        (item.AttendedLecture / item.Totallectures) * 100
+                        (parseInt(item?.totalPresent) /
+                          parseInt(item?.totalDays)) *
+                          100
                       )}
                       %
                     </Text>
@@ -256,7 +290,7 @@ export default function AttendenceDisplay({ navigation }) {
                         textAlign: "center",
                       }}
                     >
-                      {item.AttendedLecture}/{item.Totallectures}
+                      {item?.totalPresent}/{item?.totalDays}
                     </Text>
                   </View>
                 </View>

@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
@@ -22,17 +23,36 @@ import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "react-native-paper";
 import { post } from "../../../utils/apis/TeacherApis/login";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import { Buffer } from "buffer";
 
 export default function EditAssignment({ navigation, route }) {
   const Assignmentdata = route?.params?.Assignment;
 
   const { colors } = useTheme();
   const { theme } = useThemeContext();
-  const [fileName, setFileName] = useState(Assignmentdata?.documents[0]?.label);
+  // const [fileName, setFileName] = useState(Assignmentdata?.documents[0]?.label);
+  const [fileType, setFileType] = useState(null);
+  const [fileUri, setFileUri] = useState(null);
   const TodaysDate = new Date();
   const [submissionDate, setSubmissionDate] = useState(TodaysDate);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [documents, setDocuments] = useState(Assignmentdata?.documents);
+  const [updatedDocs, setUpdatedDocs] = useState([]);
+  const [isLoading, setIsloading] = useState(false);
+
+  AWS.config.update({
+    accessKeyId: "AKIAZQ3DTDYZMSHJC7JR",
+    secretAccessKey: "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",
+    region: "ap-south-1",
+  });
+
+  const s3 = new AWS.S3();
+
   console.log(`Assignmentdata Update`, Assignmentdata);
+
+  console.log(`documents`, documents);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -84,7 +104,7 @@ export default function EditAssignment({ navigation, route }) {
       headerTitleAlign: "center",
       headerTintColor: theme.backgroundColor,
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   //   const {
   //     control,
@@ -107,54 +127,298 @@ export default function EditAssignment({ navigation, route }) {
 
   const onSubmit = async (data) => {
     console.log(`submittedData`, data);
-    const response = await post("assignments/update", {
-      id: Assignmentdata?.id,
-      ...data,
-      submissionDate: submissionDate,
-    });
-    if (response?.errCode == -1) {
-      Alert.alert("Assignment Updated successfullt");
-      //   navigation.navigate("Assignments");
-      navigation.goBack();
-    } else {
-      Alert.alert("Error While Updating Assignment");
+
+    try {
+      setIsloading(true);
+      // const formData = new FormData();
+
+      console.log(`Add Assignment Data`, data);
+      console.log(`date`, submissionDate);
+
+      const UploadDocumentTos3 = async () => {
+        try {
+          const uploadTasks = updatedDocs.map(async (document) => {
+            const fileContents = await FileSystem.readAsStringAsync(
+              document.uri,
+              {
+                encoding: FileSystem.EncodingType.Base64,
+              }
+            );
+
+            const buffer = Buffer.from(fileContents, "base64");
+
+            const params = {
+              Bucket: "edba-dev-bucket",
+              Key: `Assignments/${document.name}`,
+              Body: buffer,
+              ContentType: document.mimeType,
+            };
+
+            const uploadedDocument = await s3.upload(params).promise();
+
+            console.log(
+              "Document uploaded successfully:",
+              uploadedDocument.Key
+            );
+
+            return {
+              key: uploadedDocument.Key,
+              url: uploadedDocument.Location,
+              label: document.name,
+            };
+          });
+
+          const uploadedDocuments = await Promise.all(uploadTasks);
+          return uploadedDocuments;
+        } catch (error) {
+          setIsloading(false);
+          console.error("Error uploading documents:", error);
+          Alert.alert("Upload Failed", "Error uploading documents");
+          throw error; // Throw the error to handle it further if needed
+        } finally {
+          setIsloading(false);
+        }
+      };
+
+      const docs = await UploadDocumentTos3();
+      console.log(`docs`, docs);
+      console.log(`updatedDocs`, updatedDocs);
+      console.log(`combine Docs`, [...docs, updatedDocs]);
+
+      try {
+        const postData = {
+          id: Assignmentdata?.id,
+          ...data,
+          submissionDate: submissionDate,
+          documents: [...docs, ...updatedDocs],
+        };
+        console.log(`Submitted Assignment data`, postData);
+
+        const response = await post("assignments/update", postData);
+        if (response?.errCode == -1) {
+          Alert.alert("Assignment Updated Successfully");
+          navigation.navigate("Assignments");
+        } else {
+          Alert.alert(
+            response?.errMsg
+              ? JSON.stringify(response?.errMsg)
+              : "Error creating assignment"
+          );
+        }
+      } catch (error) {
+        console.log(error);
+        setIsloading(false);
+      } finally {
+        setIsloading(false);
+      }
+
+      // Alert.alert(JSON.stringify(data));
+
+      // const UploadDocumentTos3 = async (document) => {
+      //   try {
+      //     const fileContents = await FileSystem.readAsStringAsync(
+      //       document?.uri,
+      //       {
+      //         encoding: FileSystem.EncodingType.Base64,
+      //       }
+      //     );
+
+      //     const buffer = Buffer.from(fileContents, "base64");
+
+      //     const params = {
+      //       Bucket: "edba-dev-bucket",
+      //       Key: `Assignments/${document?.name}`,
+      //       Body: buffer,
+      //       ContentType: document?.mimeType,
+      //     };
+
+      //     var uploadedDocument = await s3.upload(params).promise(); // Wait for the upload to complete
+      //     return {
+      //       key: uploadedDocument.Key,
+      //       url: uploadedDocument.Location,
+      //       label: document.name,
+      //     };
+
+      //     console.log("Document uploaded successfully:", Document.Key);
+
+      //     // Alert.alert("Upload Successful", `Document URL: ${Document.Location}`);
+
+      //     // Optionally, send the document link to your API
+      //     // await axios.post('http://your-api-url/receive-document-link', {
+      //     //   fileUrl: data.Location,
+      //     // });
+
+      //     // return data.Location;
+      //   } catch (error) {
+      //     console.error("Error uploading document:", error);
+      //     Alert.alert("Upload Failed", "Error uploading document");
+      //     throw error; // Throw the error to handle it further if needed
+      //   }
+      // };
+
+      // };
+
+      // try {
+      //   const postData = {
+      //     ...data,
+      //     teacher: TeacherId,
+      //     submissionDate: submissionDate,
+      //     documents: [
+      //       {
+      //         key: Document?.Key,
+      //         url: Document?.Location,
+      //         label: fileName,
+      //       },
+      //     ],
+      //   };
+      //   console.log(`Submitted Assignment data`, postData);
+
+      //   const response = await post("assignments/create", postData);
+      //   if (response?.errCode == -1) {
+      //     Alert.alert("Assignment Created Successfully");
+      //     navigation.navigate("Assignments");
+      //   } else {
+      //     Alert.alert(
+      //       response?.errMsg
+      //         ? JSON.stringify(response?.errMsg)
+      //         : "Error creating assignment"
+      //     );
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      // }
+
+      // formData.append("file", {
+      //   uri: fileUri,
+      //   type: fileType,
+      //   name: fileName,
+      // });
+      // formData.append("className", data.className);
+      // formData.append("subject", data.subject);
+      // formData.append("topic", data.topic);
+      // formData.append("instructions", data.instructions);
+      // formData.append("resources", data.resources);
+      // formData.append("teacherId", "66717b8653d55c5bfda2e99f");
+      // console.log(`FormmmDaatatata`, formData);
+
+      // const postData = { ...data, teacherId: "66717b8653d55c5bfda2e99f" };
+      // const response = await post("assignments", formData);
+
+      // const formDataObject = {};
+      // for (let pair of formData._parts) {
+      //   const key = pair[0];
+      //   const value = pair[1];
+      //   formDataObject[key] = value;
+      // }
+
+      // console.log("FormDataObject:", formDataObject);
+
+      // api calling
+      // try {
+      //   const postData = {
+      //     ...data,
+      //     teacher: TeacherId,
+      //     submissionDate: submissionDate,
+      //   };
+      //   console.log(`data`, post);
+
+      //   const response = await post("assignments/create", postData);
+      //   if (response?.errCode == -1) {
+      //     Alert.alert("Assignment Created Successfully");
+      //     navigation.navigate("Assignments");
+      //   } else {
+      //     Alert.alert(
+      //       response?.errMsg
+      //         ? JSON.stringify(response?.errMsg)
+      //         : "Error creating assignment"
+      //     );
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      // }
+
+      // if (response.success == true) {
+      //   Alert.alert("Success", "Assignment submitted successfully!");
+      // } else {
+      //   Alert.alert("Error", " There was an error submitting the assignment.");
+      // }
+    } catch (error) {
+      console.error(`catched error`, error);
+      Alert.alert("Error", "There was an error submitting the assignment.");
     }
-    console.log(`Updated Response `, response);
+
+    // const response = await post("assignments/update", {
+    //   id: Assignmentdata?.id,
+    //   ...data,
+    //   submissionDate: submissionDate,
+    // });
+    // if (response?.errCode == -1) {
+    //   Alert.alert("Assignment Updated successfullt");
+    //   //   navigation.navigate("Assignments");
+    //   navigation.goBack();
+    // } else {
+    //   Alert.alert("Error While Updating Assignment");
+    // }
+    // console.log(`Updated Response `, response);
   };
 
+  const removeUpdatedFile = (index) => {
+    setUpdatedDocs((prevDocs) => prevDocs.filter((_, i) => i !== index));
+  };
+  const removeFile = (index) => {
+    setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
+  };
   const pickFile = async () => {
-    // DocumentPicker;
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: "*/*", // all files
         copyToCacheDirectory: false,
       });
 
-      console.log(`result`, result);
-
       if (result.type !== "cancel") {
-        // Check if user didn't cancel
-        console.log("Result:", result);
-
         const { uri, mimeType, name } = result.assets[0];
-
-        // const fileInfo = await FileSystem.getInfoAsync(uri);
-        // console.log(`fileInfo.uri`, fileInfo);
-        // console.log(`URLIMage`, URLIMage);
-        console.log("URI:", uri);
-        console.log("Type:", mimeType);
-        console.log("Name:", name);
-
-        setFileUri(uri);
-        setFileType(mimeType);
-        setFileName(name);
+        setUpdatedDocs((prevDocs) => [...prevDocs, { uri, mimeType, name }]);
       } else {
         console.log("User cancelled the picker");
       }
     } catch (error) {
       console.log("Error picking file", error);
+      Alert.alert("Error", "Could not pick the document");
     }
   };
+
+  // const pickFile = async () => {
+  //   try {
+  //     const result = await DocumentPicker.getDocumentAsync({
+  //       type: "*/*", // all files
+  //       copyToCacheDirectory: false,
+  //     });
+
+  //     console.log(`result`, result);
+
+  //     if (result.type !== "cancel") {
+  //       // Check if user didn't cancel
+  //       console.log("Result:", result);
+
+  //       const { uri, mimeType, name } = result.assets[0];
+
+  //       // const fileInfo = await FileSystem.getInfoAsync(uri);
+  //       // console.log(`fileInfo.uri`, fileInfo);
+  //       // console.log(`URLIMage`, URLIMage);
+  //       console.log("URI:", uri);
+  //       console.log("Type:", mimeType);
+  //       console.log("Name:", name);
+
+  //       setFileUri(uri);
+  //       setFileType(mimeType);
+  //       setFileName(name);
+  //     } else {
+  //       console.log("User cancelled the picker");
+  //     }
+  //   } catch (error) {
+  //     console.log("Error picking file", error);
+  //   }
+  // };
   const {
     fields: instructionFields,
     append: appendInstruction,
@@ -403,46 +667,89 @@ export default function EditAssignment({ navigation, route }) {
           </View>
           <View
             style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "flex-end",
               marginRight: 10,
               marginTop: 10,
             }}
           >
-            <TouchableOpacity
-              onPress={pickFile}
+            <ScrollView style={{ marginTop: 20 }}>
+              {documents.length > 0 &&
+                documents.map((file, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      backgroundColor: "#EAF1FA",
+                      padding: 10,
+                      borderRadius: 5,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <Text style={{ color: "#666666", flex: 1 }}>
+                      {file.label ? file?.label : file?.name}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeFile(index)}>
+                      <FontAwesome name="trash" size={16} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              {updatedDocs.length > 0 &&
+                updatedDocs.map((file, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      backgroundColor: "#EAF1FA",
+                      padding: 10,
+                      borderRadius: 5,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <Text style={{ color: "#666666", flex: 1 }}>
+                      {file.label ? file?.label : file?.name}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeUpdatedFile(index)}>
+                      <FontAwesome name="trash" size={16} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+            </ScrollView>
+            <View
               style={{
                 display: "flex",
                 flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "#EAF1FA",
-                width: "50%",
-                height: 40,
-                borderRadius: 5,
-                gap: 4,
-              }}
-            >
-              <FontAwesome name="upload" size={16} color="#666666" />
-              <Text style={{ color: theme.primaryTextColor }}>
-                {fileName == null ? "Upload Document" : "Change Document"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {fileName == null ? (
-            ""
-          ) : (
-            <Text
-              style={{
-                textAlign: "right",
+                justifyContent: "flex-end",
                 marginRight: 10,
-                color: theme.primaryTextColor,
+                marginTop: 10,
               }}
             >
-              {fileName}
-            </Text>
-          )}
+              <TouchableOpacity
+                onPress={pickFile}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "#EAF1FA",
+                  width: "50%",
+                  height: 40,
+                  borderRadius: 5,
+                  gap: 4,
+                }}
+              >
+                <FontAwesome name="upload" size={16} color="#666666" />
+                <Text style={{ color: theme.primaryTextColor }}>
+                  Add Document
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View>
             <Text>Submission Date</Text>
           </View>

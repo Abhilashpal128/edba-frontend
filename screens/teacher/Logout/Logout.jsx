@@ -5,10 +5,18 @@ import { SafeAreaView } from "react-native";
 import { useDispatch } from "react-redux";
 import { logout } from "../../../Redux/slices/LoginSlice";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { cleardatafromStorage } from "../../../Storage/storage";
 
 export default function Logout({ navigation, bottomSheetRef }) {
   const { theme } = useThemeContext();
   const dispatch = useDispatch();
+
+  const handleLogOut = async () => {
+    dispatch(logout());
+    bottomSheetRef.current.close();
+    await cleardatafromStorage();
+  };
+
   return (
     <SafeAreaView
       style={{
@@ -75,8 +83,7 @@ export default function Logout({ navigation, bottomSheetRef }) {
             borderRadius: 50,
           }}
           onPress={() => {
-            bottomSheetRef.current.close();
-            dispatch(logout());
+            handleLogOut();
           }}
         >
           <Text

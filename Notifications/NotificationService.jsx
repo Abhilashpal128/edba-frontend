@@ -2,6 +2,9 @@ import * as Notifications from "expo-notifications";
 import { Alert } from "react-native";
 import Constants from "expo-constants";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch } from "react-redux";
+import { setToken } from "../Redux/slices/Tokenslice";
 
 const createNotificationCategory = async () => {
   try {
@@ -29,7 +32,17 @@ const createNotificationCategory = async () => {
   }
 };
 
+// const storeTokenInStorage = async (token) => {
+//   try {
+//     const data = JSON.stringify(token);
+//     await AsyncStorage.setItem(`expoToken`, data);
+//   } catch (error) {
+//     console.log(`error while storing token in Async Storage: ${error}`);
+//   }
+// };
+
 export const registerForPushNotificationsAsync = async () => {
+  const dispatch = useDispatch();
   let token;
   if (Constants.isDevice) {
     const { status: existingStatus } =
@@ -45,7 +58,9 @@ export const registerForPushNotificationsAsync = async () => {
       return;
     }
     token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log("Expo Push Token:", token);
+    console.log("Expo Push Token in registerForPushNotificationsAsync:", token);
+    // storeTokenInStorage(token);
+    dispatch(setToken(token));
   } else {
     Alert.alert("Must use physical device for Push Notifications");
   }

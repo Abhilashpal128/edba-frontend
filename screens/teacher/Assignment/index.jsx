@@ -556,9 +556,8 @@ export default function TeacherAssignment({ navigation }) {
             useNativeAndroidPickerStyle={false}
           />
         </View>
-        {assignments.length > 0 ? (
+        {assignments?.length > 0 ? (
           <View style={{ marginHorizontal: 20 }}>
-            <CustomRefreshControl refreshing={refreshing} />
             <SectionList
               sections={assignments.map(({ subject, details }) => ({
                 subject,

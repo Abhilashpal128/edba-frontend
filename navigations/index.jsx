@@ -43,6 +43,8 @@ export default function Navigation() {
   //   setupNotifications();
   // }, []);
 
+  
+
   let [fontsLoaded] = useFonts({
     Poppins_100Thin,
     Poppins_100Thin_Italic,

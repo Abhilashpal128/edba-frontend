@@ -23,7 +23,7 @@ export default function DrawerRoutingcontent() {
   let sideMenu = [];
 
   userData &&
-    (userData.password == "student"
+    (userData?.role == "student"
       ? (sideMenu = [
           { name: "Home", icon: "home-outline", screen: "StudentHome" },
           {
@@ -82,7 +82,7 @@ export default function DrawerRoutingcontent() {
   //     screen: "Attendence",
   //   },
   //   { name: "Inbox", icon: "email-outline" },
-  // ]; 
+  // ];
 
   const handleDrawerNavigationClick = (item) => {
     if (item.subScreens) {

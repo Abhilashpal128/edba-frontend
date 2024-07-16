@@ -9,99 +9,119 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Linking,
 } from "react-native";
 import { Svg, Circle, Text as SvgText, Path } from "react-native-svg";
 import { useTheme, Avatar, Divider, Button } from "react-native-paper";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { Ionicons } from "react-native-vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-
+import * as FileSystem from "expo-file-system";
+import { Buffer } from "buffer";
 import { DrawerActions, Link } from "@react-navigation/native";
 import { Subjects } from "../../../svg/subjects";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/StudentApis";
+import { useSelector } from "react-redux";
+import SvgRenderer from "./SvgRenderer";
 
 export default function AssignmentDisplay({ navigation, route }) {
   const [fileUri, setFileUri] = useState(null);
   const [fileType, setFileType] = useState(null);
   const [fileName, setFileName] = useState(null);
   const [submitButtonPressed, setisSubmitButtonPressed] = useState(false);
+  const [teacherDetails, setTeacherDetails] = useState(null);
   const params = route.params;
   const { theme } = useThemeContext();
+  const userData = useSelector((state) => state?.login?.user);
+  const studentId = userData?.studentId;
+
+  console.log(`Params Assignment`, params?.subject);
+
+  AWS.config.update({
+    accessKeyId: "AKIAZQ3DTDYZMSHJC7JR",
+    secretAccessKey: "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",
+    region: "ap-south-1",
+  });
+
+  const s3 = new AWS.S3();
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      header: () => {
-        return (
-          <View
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            marginLeft: 20,
+          }}
+        >
+          <FontAwesome6
+            name="chevron-left"
+            size={20}
+            color={theme.secondaryTextColor}
+          />
+        </TouchableOpacity>
+      ),
+
+      headerTitle: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {params?.subject?.svg !== null && (
+            <SvgRenderer svgContent={`${params?.subject?.svg}`} />
+          )}
+          <Text
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingLeft: 20,
-              paddingRight: 20,
-              paddingTop: 20,
-              paddingBottom: 10,
+              fontSize: 16,
+              marginLeft: 10,
+              color: theme.primaryTextColor,
+              fontWeight: "bold",
             }}
           >
-            <TouchableOpacity
-              onPress={() => {
-                navigation.goBack();
-              }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "20%",
-              }}
-            >
-              <FontAwesome6
-                name="chevron-left"
-                size={20}
-                color={theme.secondaryTextColor}
-              />
-            </TouchableOpacity>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {Subjects[params.subject.slug]()}
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginLeft: 10,
-                  color: theme.primaryTextColor,
-                  fontWeight: "bold",
-                }}
-              >
-                {params.subject.label}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "20%",
-                justifyContent: "flex-end",
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  navigation.navigate("Notification");
-                }}
-              >
-                <Ionicons
-                  name="notifications"
-                  size={20}
-                  color={theme.secondaryTextColor}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
+            {params?.subject?.subjectName}
+          </Text>
+        </View>
+      ),
+
+      headerRight: () => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "20%",
+            justifyContent: "flex-end",
+            marginRight: 20,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Notification");
+            }}
+          >
+            <Ionicons
+              name="notifications"
+              size={20}
+              color={theme.secondaryTextColor}
+            />
+          </TouchableOpacity>
+        </View>
+      ),
+      headerStyle: {
+        backgroundColor: theme.backgroundColor,
       },
+      headerTitleAlign: "center", // Adjust alignment for header title (if needed)
+      headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation, params,theme]);
+  }, [navigation, params, theme]);
 
   const hexToRgba = (hex, opacity) => {
     hex = hex.replace("#", "");
@@ -123,6 +143,26 @@ export default function AssignmentDisplay({ navigation, route }) {
 
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
+
+  const fetchTetacherDetails = async (teacherId) => {
+    try {
+      const response = await post("teacher/limited-details", {
+        id: teacherId,
+      });
+      // console.log(response);
+      if (response?.errCode == -1) {
+        setTeacherDetails(response?.data);
+      } else {
+        setTeacherDetails(null);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTetacherDetails(params?.assignment?.teacher);
+  }, []);
 
   const pickFile = async () => {
     // DocumentPicker;
@@ -157,27 +197,96 @@ export default function AssignmentDisplay({ navigation, route }) {
     }
   };
 
-  const handleSubmitAssignment = () => {
-    try {
-      if (fileName == null) {
-        setisSubmitButtonPressed(true);
-      } else {
-        const formData = new FormData();
-
-        formData.append("file", {
-          uri: fileUri,
-          type: fileType,
-          name: fileName,
-        });
-        Alert.alert("assignment has been submitted file Name:", fileName);
-      }
-    } catch (error) {
-      Alert.alert("Error", "There was an error submitting the assignment.");
+  const handleSubmitAssignment = async () => {
+    if (fileName == null) {
+      setisSubmitButtonPressed(true);
+      return;
     }
+    try {
+      if (fileUri) {
+        const fileContents = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        const buffer = Buffer.from(fileContents, "base64");
+
+        const params = {
+          Bucket: "edba-dev-bucket",
+          Key: `Assignments/${fileName}`,
+          Body: buffer,
+          ContentType: fileType,
+        };
+
+        var Document = await s3.upload(params).promise(); // Wait for the upload to complete
+
+        console.log("Document uploaded successfully:", Document.Key);
+      }
+
+      // Alert.alert("Upload Successful", `Document URL: ${Document.Location}`);
+      try {
+        const postData = {
+          // ...data,
+          // teacher: TeacherId,
+          // submissionDate: submissionDate,
+          assignmentId: params?.assignment?.id,
+          studentId: studentId,
+          status: "completed",
+          documents: [
+            {
+              key: Document?.Key,
+              url: Document?.Location,
+              label: fileName,
+            },
+          ],
+        };
+        console.log(`Submitted Assignment data`, postData);
+
+        const response = await post("student/submission", postData);
+        if (response?.errCode == -1) {
+          Alert.alert("Assignment Submitted Successfully");
+          navigation.navigate("Assignments");
+        } else {
+          Alert.alert(
+            response?.errMsg
+              ? JSON.stringify(response?.errMsg)
+              : "Error submitting assignment"
+          );
+        }
+      } catch (error) {
+        console.log(`error in submitting student Assignment`, error);
+      }
+
+      // Optionally, send the document link to your API
+      // await axios.post('http://your-api-url/receive-document-link', {
+      //   fileUrl: data.Location,
+      // });
+
+      // return data.Location; // Return the uploaded document URL
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      Alert.alert("Upload Failed", "Error uploading document");
+      throw error; // Throw the error to handle it further if needed
+    }
+    // try {
+    //   if (fileName == null) {
+    //     setisSubmitButtonPressed(true);
+    //   } else {
+    //     const formData = new FormData();
+
+    //     formData.append("file", {
+    //       uri: fileUri,
+    //       type: fileType,
+    //       name: fileName,
+    //     });
+    //     Alert.alert("assignment has been submitted ", fileName);
+    //   }
+    // } catch (error) {
+    //   Alert.alert("Error", "There was an error submitting the assignment.");
+    // }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
       <View style={{ padding: 20, flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View
@@ -216,7 +325,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                       Assignments Details
                     </Text>
                   </View>
-                  <View
+                  {/* <View
                     style={{
                       width: 30,
                       height: 40,
@@ -264,7 +373,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                     >
                       FAQ
                     </Text>
-                  </View>
+                  </View> */}
                 </View>
                 <Text
                   style={{
@@ -274,41 +383,45 @@ export default function AssignmentDisplay({ navigation, route }) {
                     fontWeight: "bold",
                   }}
                 >
-                  {params?.assignment?.question}
+                  {params?.assignment?.name}
                 </Text>
                 <View style={{ marginTop: 10 }}>
-                  <Text
-                    style={{
-                      marginTop: 10,
-                      fontSize: 12,
-                      fontWeight: "semibold",
-                      color: theme.secondaryTextColor,
-                    }}
-                  >
-                    Created By
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginTop: 8,
-                    }}
-                  >
-                    <Avatar.Text
-                      size={24}
-                      label={"EP"}
-                      theme={{ colors: { primary: "#007EB0" } }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: theme.secondaryTextColor,
-                        marginLeft: 6,
-                      }}
-                    >
-                      Elliana Palacios
-                    </Text>
-                  </View>
+                  {teacherDetails !== null && (
+                    <View>
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 12,
+                          fontWeight: "semibold",
+                          color: theme.secondaryTextColor,
+                        }}
+                      >
+                        Created By
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 8,
+                        }}
+                      >
+                        <Avatar.Text
+                          size={24}
+                          label={teacherDetails?.name?.slice(0, 1)}
+                          theme={{ colors: { primary: "#007EB0" } }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: theme.secondaryTextColor,
+                            marginLeft: 6,
+                          }}
+                        >
+                          {teacherDetails?.name}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                   <Divider style={{ marginTop: 10, marginBottom: 10 }} />
                   <View style={{ marginBottom: 10 }}>
                     <Text
@@ -332,7 +445,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                             }}
                             key={index}
                           >
-                            {item.description}
+                            {item}
                           </Text>
                         ))}
                       </View>
@@ -371,7 +484,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                                 color: theme.secondaryTextColor,
                               }}
                             >
-                              {item.description}
+                              {item}
                             </Text>
 
                             <Text
@@ -380,7 +493,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                                 color: theme.primarycolor,
                               }}
                             >
-                              {item.link}
+                              {item?.link}
                             </Text>
                           </View>
                         ))}
@@ -403,6 +516,53 @@ export default function AssignmentDisplay({ navigation, route }) {
               </View>
             </View>
           </View>
+          <View style={{ marginTop: 10 }}></View>
+          {params?.assignment?.documents?.length > 0 &&
+            params?.assignment?.documents?.map((item, index) => (
+              <View
+                style={{ marginTop: 20, display: "flex", alignItems: "center" }}
+              >
+                <TouchableOpacity
+                  style={{
+                    height: 46,
+                    width: "100%",
+                    backgroundColor: "#AAAAAA",
+                    borderRadius: 5,
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                  onPress={() => {
+                    Linking.openURL(item?.url);
+                  }}
+                >
+                  <Ionicons name="document-outline" size={24} color="#FFFFFF" />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#fff",
+                      fontWeight: "semibold",
+                    }}
+                  >
+                    {item?.label}
+                  </Text>
+                </TouchableOpacity>
+                {/* <Button
+                  mode={"contained"}
+                  buttonColor="#2B78CA"
+                  contentStyle={{ height: 40 }}
+                  labelStyle={{
+                    fontSize: 14,
+                    color: "#fff",
+                  }}
+                  style={{ borderRadius: 8 }}
+                >
+                  Submit Assignment
+                </Button> */}
+              </View>
+            ))}
           <View style={{ marginTop: 10 }}>
             <TouchableOpacity
               style={{
