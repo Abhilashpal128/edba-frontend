@@ -41,8 +41,8 @@ export default function AssignmentDisplay({ navigation, route }) {
   const Accesskey = "shFANmgtLWMwQjMo619yZk94hA2yh4P25en492Km";
 
   AWS.config.update({
-    accessKeyId: AcessKeyId,
-    secretAccessKey: Accesskey,
+    accessKeyId: "AKIAZQ3DTDYZMSHJC7JR",
+    secretAccessKey: "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",
     region: "ap-south-1",
   });
 
@@ -309,6 +309,28 @@ export default function AssignmentDisplay({ navigation, route }) {
     // }
   };
 
+  // const generateSignedUrl = (item, expiresInSeconds) => {
+  //   const params = {
+  //     Bucket: "edba-dev-bucket",
+  //     Key: item?.key,
+  //     Expires: expiresInSeconds,
+  //     ACL: "public-read",
+  //     ContentType: "*",
+  //   };
+  //   console.log(`hello from generateSignedUrl `);
+  //   return new Promise((resolve, reject) => {
+  //     s3.getSignedUrl("putObject", params, (err, url) => {
+  //       if (err) {
+  //         reject(err);
+  //       } else {
+  //         resolve(url);
+  //       }
+  //     });
+  //   });
+  // };
+
+ 
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
       <View style={{ padding: 20, flex: 1 }}>
@@ -559,7 +581,9 @@ export default function AssignmentDisplay({ navigation, route }) {
                     gap: 10,
                   }}
                   onPress={() => {
-                    Linking.openURL(item?.url);
+                    Linking.openURL(
+                      `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
+                    );
                   }}
                 >
                   <Ionicons name="document-outline" size={24} color="#FFFFFF" />

@@ -92,7 +92,7 @@ export default function TeacherNotification() {
         id: userId,
       });
       if (response?.errCode == -1) {
-        const latestNotification = response?.data?.reverse();
+        // const latestNotification = response?.data?.reverse();
         setNotifications(response?.data);
         setRefreshing(false);
         setIsLoading(false);

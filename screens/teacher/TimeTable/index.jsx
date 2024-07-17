@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   Animated,
   BackHandler,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useLayoutEffect } from "react";
 import { Ionicons, Entypo, AntDesign } from "react-native-vector-icons";
@@ -90,6 +92,7 @@ export default function TeacherTimeTable({ navigation, route }) {
   const [classDetailTab, setClassDetailTab] = useState(false);
   const [selectedClassDetail, setSelectedClassDetail] = useState();
   const [isLoading, setIsLoading] = useState(true);
+  const [isTabChange, setIsTabChange] = useState(false);
   const [selectedClassDate, setSelectedClassDate] = useState("10 june 2024");
   const [selectedClassDay, setselectedClassDay] = useState("Monday");
   const [selectedMonth, setSelectedMonth] = useState(moment().month());
@@ -207,52 +210,63 @@ export default function TeacherTimeTable({ navigation, route }) {
   };
 
   const fetchTimetable = async (Todaysdate) => {
-    console.log(`TeacherId`, TeacherId);
-    const response = await post("timetable/search", {
-      teacherId: TeacherId,
-      date: Todaysdate,
-    });
+    try {
+      setIsTabChange(true);
 
-    console.log("Requested date:", Todaysdate);
-    console.log("Response data:", response.data);
+      console.log(`TeacherId`, TeacherId);
+      const response = await post("timetable/search", {
+        teacherId: TeacherId,
+        date: Todaysdate,
+      });
 
-    if (response.errCode == -1) {
-      const groupedByDate = response?.data?.reduce((acc, entry) => {
-        const { date } = entry;
+      console.log("Requested date:", Todaysdate);
+      console.log("Response data:", response.data);
 
-        // If date doesn't exist in acc yet, create it
-        if (!acc[date]) {
-          acc[date] = {
-            day: moment(date).format("dddd"),
-            date: date,
-            classes: [],
-          };
-        }
+      if (response.errCode == -1) {
+        setIsTabChange(false);
+        const groupedByDate = response?.data?.reduce((acc, entry) => {
+          const { date } = entry;
 
-        // Add class details to the classes array
-        acc[date].classes.push({
-          id: entry.id,
-          time: moment(entry.startTime, "hh:mm").format("hh:mm A"), // Format time if needed
-          class: entry.class,
-          room: entry.room,
-          subject: entry.subject,
-          division: entry.division,
-          teacher: entry.teacher,
-          details: entry.details,
-          startTime: entry.startTime,
-          endTime: entry.endTime,
-        });
+          // If date doesn't exist in acc yet, create it
+          if (!acc[date]) {
+            acc[date] = {
+              day: moment(date).format("dddd"),
+              date: date,
+              classes: [],
+            };
+          }
 
-        return acc;
-      }, {});
+          // Add class details to the classes array
+          acc[date].classes.push({
+            id: entry.id,
+            time: moment(entry.startTime, "hh:mm").format("hh:mm A"), // Format time if needed
+            class: entry.class,
+            room: entry.room,
+            subject: entry.subject,
+            division: entry.division,
+            teacher: entry.teacher,
+            details: entry.details,
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+          });
 
-      // Convert groupedByDate object into an array of values
-      const transformedData = Object.values(groupedByDate);
+          return acc;
+        }, {});
 
-      console.log("Transformed Data:", transformedData);
-      setTimeTableData(transformedData);
-    } else {
-      setTimeTableData([]);
+        // Convert groupedByDate object into an array of values
+        const transformedData = Object.values(groupedByDate);
+
+        console.log("Transformed Data:", transformedData);
+        setTimeTableData(transformedData);
+        setIsTabChange(false);
+      } else {
+        setTimeTableData([]);
+        isTabChange(true);
+        setIsTabChange(false);
+      }
+    } catch (error) {
+      console.log(`error in timetable`, error);
+      setIsTabChange(false);
     }
   };
 
@@ -260,62 +274,70 @@ export default function TeacherTimeTable({ navigation, route }) {
     // const response = await get(
     //   `timetables/filter/?month=${monthNumber}&year=${currentYear}`
     // );
-
-    console.log(`Montly timetabke called`);
-    const response = await post("timetable/monthly", {
-      teacherId: TeacherId,
-      month: "7",
-      year: "2024",
-    });
-    console.log(`ThisMontResponse`, response?.data);
-    if (response?.errCode == -1) {
-      response.data.forEach((entry) => {
-        console.log("Processing entry date:", entry.date);
+    try {
+      setIsTabChange(true);
+      console.log(`Montly timetabke called`);
+      const response = await post("timetable/monthly", {
+        teacherId: TeacherId,
+        month: "7",
+        year: "2024",
       });
-      const groupedByDate = response?.data.reduce((acc, entry) => {
-        const { date } = entry;
-        console.log("Current entry:", entry);
-
-        // If date doesn't exist in acc yet, create it
-        if (!acc[date]) {
-          acc[date] = {
-            day: moment(date).format("dddd"),
-            date: date,
-            classes: [],
-          };
-        }
-
-        // Add class details to the classes array
-        acc[date].classes.push({
-          id: entry.id,
-          time: moment(entry.startTime, "hh:mm").format("hh:mm A"), // Format time if needed
-          class: entry.class,
-          room: entry.room,
-          subject: entry.subject,
-          division: entry.division,
-          teacher: entry.teacher,
-          details: entry.details,
-          startTime: entry.startTime,
-          endTime: entry.endTime,
+      console.log(`ThisMontResponse`, response?.data);
+      if (response?.errCode == -1) {
+        setIsTabChange(false);
+        response.data.forEach((entry) => {
+          console.log("Processing entry date:", entry.date);
         });
+        const groupedByDate = response?.data.reduce((acc, entry) => {
+          const { date } = entry;
+          console.log("Current entry:", entry);
 
-        console.log("Updated acc:", acc);
+          // If date doesn't exist in acc yet, create it
+          if (!acc[date]) {
+            acc[date] = {
+              day: moment(date).format("dddd"),
+              date: date,
+              classes: [],
+            };
+          }
 
-        return acc;
-      }, {});
+          // Add class details to the classes array
+          acc[date].classes?.push({
+            id: entry.id,
+            time: moment(entry.startTime, "hh:mm").format("hh:mm A"),
+            class: entry.class,
+            room: entry.room,
+            subject: entry.subject,
+            division: entry.division,
+            teacher: entry.teacher,
+            details: entry.details,
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+          });
 
-      // Convert groupedByDate object into an array of values
-      const transformedData = Object.values(groupedByDate);
+          console.log("Updated acc:", acc);
 
-      console.log("Transformed Data:", transformedData);
+          return acc;
+        }, {});
 
-      setTimeTableData(transformedData);
-      setIsLoading(false);
-    } else {
-      setTimeTableData([]);
-      setIsLoading(false);
+        // Convert groupedByDate object into an array of values
+        const transformedData = Object.values(groupedByDate);
+
+        console.log("Transformed Data:", transformedData);
+
+        setTimeTableData(transformedData);
+        setIsLoading(false);
+        setIsTabChange(false);
+      } else {
+        setTimeTableData([]);
+        setIsLoading(false);
+        setIsTabChange(false);
+      }
+      // }
+    } catch (error) {
+      console.log(`error in timetable`, error);
+      setIsTabChange(false);
     }
-    // }
   };
 
   const [selectedWeek, setSelectedWeek] = useState("ThisWeek");
@@ -334,12 +356,13 @@ export default function TeacherTimeTable({ navigation, route }) {
     }
   };
 
-  const timeSlots = timetableDataArray[0].classes.map(
-    (classInfo) => classInfo.time
-  );
+  // const timeSlots = timetableDataArray[0].classes.map(
+  //   (classInfo) => classInfo.time
+  // );
 
   const fetchDataWeekWise = async (startDate) => {
     try {
+      setIsTabChange(true);
       const response = await post("timetable/weekly", {
         startDate: startDate,
         teacherId: TeacherId,
@@ -382,13 +405,16 @@ export default function TeacherTimeTable({ navigation, route }) {
         console.log(`transformedData`, transformedData);
         setTimeTableData(transformedData);
         setIsLoading(false);
+        setIsTabChange(false);
       } else {
         setTimeTableData([]);
         setIsLoading(false);
+        setIsTabChange(false);
       }
     } catch (error) {
       setIsLoading(false);
-      console.log(error);
+      console.log(`error in timetable`, error);
+      setIsTabChange(false);
     }
   };
 
@@ -442,11 +468,226 @@ export default function TeacherTimeTable({ navigation, route }) {
     fetchDataWeekWise(moment(Today));
   }, []);
 
+  const getUniqueTimeClasses = (timetable) => {
+    return timetable.map((day) => {
+      const startTimes = day.classes.map((cls) => cls.startTime);
+      const uniqueStartTimes = startTimes.filter(
+        (time, index, self) => self.indexOf(time) === self.lastIndexOf(time)
+      );
+
+      const uniqueClasses = day.classes.filter((cls) =>
+        uniqueStartTimes.includes(cls.startTime)
+      );
+
+      return {
+        day: day.day,
+        date: day.date,
+        classes: uniqueClasses,
+      };
+    });
+  };
+
+  const uniqueTimeClasses = getUniqueTimeClasses(TimeTableData);
+  console.log(`uniqueTimeClasses`, uniqueTimeClasses);
+
+  function getUniqueTimeSlots(schedule) {
+    const timeSlots = new Set();
+
+    schedule.forEach((day) => {
+      day.classes.forEach((cls) => {
+        const slot = `${cls.startTime} - ${cls.endTime}`;
+        timeSlots.add(slot);
+      });
+    });
+
+    return Array.from(timeSlots).sort();
+  }
+
+  const uniqueTimeSlots = getUniqueTimeSlots(TimeTableData);
+  console.log(`uniqueTimeSlots`, uniqueTimeSlots);
+
   const dayWithMaxClasses = TimeTableData.reduce((maxDay, currentDay) => {
-    return currentDay.classes.length > maxDay.classes.length
+    return currentDay?.classes?.length > maxDay?.classes?.length
       ? currentDay
       : maxDay;
-  }, TimeTableData[0]);
+  }, TimeTableData);
+
+  console.log(`dayWithMaxClasses`, dayWithMaxClasses);
+
+  // const renderClassItem = ({ item }) => (
+  //   <View style={styles.classItem}>
+  //     <Text style={styles.time}>{item.time}</Text>
+  //     <View
+  //       style={{
+  //         alignItems: "center",
+  //       }}
+  //     >
+  //       <Text
+  //         style={[
+  //           {
+  //             fontSize: 16,
+  //             fontWeight: "bold",
+  //           },
+  //           { color: item.subject.color },
+  //         ]}
+  //       >
+  //         {item.subject.name}
+  //       </Text>
+  //       <Text
+  //         style={{
+  //           fontSize: 14,
+  //           color: "#666",
+  //         }}
+  //       >
+  //         {item.class.name}
+  //       </Text>
+  //       <Text
+  //         style={{
+  //           fontSize: 14,
+  //           color: "#666",
+  //         }}
+  //       >
+  //         Teacher: {item.teacher.name}
+  //       </Text>
+  //       <Text style={styles.details}>{item.details}</Text>
+  //     </View>
+  //   </View>
+  // );
+
+  // Function to render each day's timetable
+  // const renderDayItem = ({ item }) => (
+  //   <View style={styles.dayItem}>
+  //     <Text style={styles.day}>{item.day}</Text>
+  //     <FlatList
+  //       data={item.classes}
+  //       renderItem={renderClassItem}
+  //       keyExtractor={(classItem) => classItem.id}
+  //     />
+  //   </View>
+  // );
+
+  const [times, setTimes] = useState([]);
+
+  console.log(`times`, times);
+
+  useEffect(() => {
+    // Extract all unique times from the timetable data
+    const allTimes = TimeTableData.flatMap((day) =>
+      day.classes.map((classItem) => classItem.time)
+    )
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .sort(
+        (a, b) => new Date(`1970/01/01 ${a}`) - new Date(`1970/01/01 ${b}`)
+      );
+    setTimes(allTimes);
+  }, [TimeTableData]);
+
+  const renderTimetable = () => {
+    return times.map((time, index) => (
+      <View
+        key={index}
+        style={{
+          flexDirection: "row",
+          gap: 10,
+        }}
+      >
+        <View style={{ backgroundColor: `${theme.primarycolor}0D` }}>
+          <Text
+            style={{
+              width: 80,
+              fontSize: 16,
+              fontWeight: "bold",
+            }}
+          >
+            {time}
+          </Text>
+        </View>
+        <ScrollView>
+          <View style={{ flexDirection: "row" }}>
+            {TimeTableData.map((day, dayIndex) => {
+              const classItem = day.classes.find((item) => item.time === time);
+              return (
+                <View
+                  key={dayIndex}
+                  style={{
+                    marginLeft: 10,
+                    height: 80,
+                    backgroundColor: theme.BoxColor,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 10,
+                    borderRadius: 5,
+                    width: activeWeek == "Today" ? 300 : 100,
+                    margin: 5,
+                  }}
+                >
+                  {classItem ? (
+                    <View
+                      style={{
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={[
+                          {
+                            fontSize: 16,
+                            fontWeight: "bold",
+                          },
+                          { color: classItem.subject.color },
+                          {
+                            fontSize: activeWeek == "Today" ? 16 : 12,
+                          },
+                        ]}
+                      >
+                        {classItem.subject.name}
+                      </Text>
+                      <Text
+                        // style={styles?.className}
+                        style={{
+                          color:
+                            activeWeek == "Today"
+                              ? theme.primaryTextColor
+                              : theme.secondaryTextColor,
+                          fontSize: activeWeek == "Today" ? 16 : 12,
+                        }}
+                      >
+                        {classItem?.class?.name}
+                      </Text>
+                      <Text
+                        style={{
+                          color:
+                            activeWeek == "Today"
+                              ? theme.primaryTextColor
+                              : theme.secondaryTextColor,
+                          fontSize: activeWeek == "Today" ? 16 : 12,
+                        }}
+                      >
+                        {" "}
+                        Room:{classItem?.room}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ width: 100 }}>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#aaa",
+                        }}
+                      >
+                        No lecture
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    ));
+  };
 
   return (
     // <Animated.View
@@ -756,7 +997,168 @@ export default function TeacherTimeTable({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
               </ScrollView>
-              <ScrollView>
+
+              {isTabChange == true ? (
+                <View>
+                  <ActivityIndicator size={"large"} />
+                </View>
+              ) : (
+                <ScrollView horizontal={false}>
+                  {/* Time column */}
+                  <View style={{ flexDirection: "row" }}>
+                    <View
+                      style={{
+                        width: 100,
+                        backgroundColor: `${theme.primarycolor}0D`,
+                        padding: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 60,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontWeight: "500",
+                            fontSize: 16,
+                            color: theme.primaryTextColor,
+                          }}
+                        >
+                          Time
+                        </Text>
+                      </View>
+                      {/* Map over times for the time slots */}
+
+                      {times?.map((classInfo, index) => (
+                        <View
+                          key={index}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: 80,
+                            marginBottom: 10,
+                          }}
+                        >
+                          <Text style={{ color: theme.primaryTextColor }}>
+                            {classInfo}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Lectures for each day */}
+                    <ScrollView horizontal={true}>
+                      {/* Map over TimeTableData for each day */}
+                      {TimeTableData.map((data, dataIndex) => (
+                        <View key={dataIndex} style={{ marginLeft: 10 }}>
+                          <View
+                            style={{
+                              height: 60,
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={{ color: theme.primaryTextColor }}>
+                              {JSON.stringify(data?.day).slice(1, 4)}
+                            </Text>
+                            <Text style={{ color: theme.primaryTextColor }}>
+                              {moment(data?.date).format("DD")}
+                            </Text>
+                          </View>
+
+                          {/* Display lectures for each time slot */}
+                          <View
+                            style={{ flexDirection: "column", marginLeft: 10 }}
+                          >
+                            {times?.map((classInfo, classIndex) => {
+                              const classData = data?.classes.find(
+                                (item) => item.time === classInfo
+                              );
+                              return (
+                                <TouchableOpacity
+                                  key={classIndex}
+                                  style={{
+                                    height: 80,
+                                    backgroundColor: theme.BoxColor,
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    padding: 10,
+                                    borderRadius: 5,
+                                    marginBottom: 10,
+                                    width:
+                                      activeWeek === "Today" ? 300 : "auto",
+                                  }}
+                                  onPress={() =>
+                                    classData
+                                      ? handleClassExchange(
+                                          classData,
+                                          data?.date,
+                                          data?.day
+                                        )
+                                      : null
+                                  }
+                                >
+                                  {classData ? (
+                                    <>
+                                      <Text
+                                        style={{
+                                          color:
+                                            activeWeek === "Today"
+                                              ? theme.primaryTextColor
+                                              : theme.secondaryTextColor,
+                                          fontSize:
+                                            activeWeek === "Today" ? 16 : 12,
+                                        }}
+                                      >
+                                        Class:{" "}
+                                        {JSON.stringify(classData?.class?.name)}
+                                      </Text>
+                                      <Text
+                                        style={{
+                                          color:
+                                            activeWeek === "Today"
+                                              ? theme.primaryTextColor
+                                              : theme.secondaryTextColor,
+                                          fontSize:
+                                            activeWeek === "Today" ? 16 : 12,
+                                        }}
+                                      >
+                                        Room No: {classData?.room}
+                                      </Text>
+                                    </>
+                                  ) : (
+                                    <Text
+                                      style={{ color: theme.primaryTextColor }}
+                                    >
+                                      No Lecture
+                                    </Text>
+                                  )}
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+
+                          {/* Additional ScrollView for each day's classes */}
+                          <ScrollView>
+                            {data?.classes?.map((item, itemIndex) => (
+                              <View key={itemIndex}>
+                                {/* Render additional details for each class */}
+                              </View>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </ScrollView>
+              )}
+              {/* <ScrollView>
                 <View
                   style={{
                     display: "flex",
@@ -790,7 +1192,7 @@ export default function TeacherTimeTable({ navigation, route }) {
                       </Text>
                     </View>
 
-                    {dayWithMaxClasses?.classes?.map((classInfo, index) => (
+                    {times?.map((classInfo, index) => (
                       <View
                         key={index}
                         style={{
@@ -810,11 +1212,11 @@ export default function TeacherTimeTable({ navigation, route }) {
                           }}
                         >
                           <Text style={{ color: theme.primaryTextColor }}>
-                            {classInfo?.startTime}
+                            {classInfo}
                           </Text>
                           <Text>To</Text>
                           <Text style={{ color: theme.primaryTextColor }}>
-                            {classInfo?.endTime}
+                            {classInfo}
                           </Text>
                         </View>
                       </View>
@@ -959,11 +1361,11 @@ export default function TeacherTimeTable({ navigation, route }) {
                                   </View>
                                 )}
 
-                                {/* <ScrollView>
-                {data.classes.map((item) => (
-                  <View></View>
-                ))}
-              </ScrollView> */}
+                                <ScrollView>
+                                  {data?.classes?.map((item) => (
+                                    <View></View>
+                                  ))}
+                                </ScrollView>
                               </View>
                             </View>
                           ))
@@ -979,7 +1381,7 @@ export default function TeacherTimeTable({ navigation, route }) {
                     </ScrollView>
                   </ScrollView>
                 </View>
-              </ScrollView>
+              </ScrollView> */}
             </ScrollView>
           )}
         </SafeAreaView>
@@ -989,4 +1391,102 @@ export default function TeacherTimeTable({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({});
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     padding: 20,
+//     backgroundColor: "#f8f8f8",
+//   },
+//   dayItem: {
+//     marginBottom: 20,
+//   },
+//   day: {
+//     fontSize: 20,
+//     fontWeight: "bold",
+//     marginBottom: 10,
+//   },
+//   classItem: {
+//     flexDirection: "row",
+//     marginBottom: 10,
+//     backgroundColor: "#fff",
+//     padding: 10,
+//     borderRadius: 5,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.1,
+//     shadowRadius: 5,
+//     elevation: 3,
+//   },
+//   time: {
+//     fontSize: 16,
+//     width: 80,
+//   },
+//   classDetails: {
+//     flex: 1,
+//   },
+//   subject: {
+//     fontSize: 16,
+//     fontWeight: "bold",
+//   },
+//   className: {
+//     fontSize: 14,
+//     color: "#666",
+//   },
+//   teacher: {
+//     fontSize: 14,
+//     color: "#666",
+//   },
+//   details: {
+//     fontSize: 14,
+//     color: "#666",
+//   },
+// });
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  headerRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  timeColumn: {
+    width: 80,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  dayColumn: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  classColumn: {
+    flex: 1,
+    padding: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  classDetails: {
+    alignItems: "center",
+  },
+  subject: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  className: {
+    fontSize: 14,
+    color: "#666",
+  },
+  teacher: {
+    fontSize: 14,
+    color: "#666",
+  },
+  emptySlot: {
+    fontSize: 14,
+    color: "#aaa",
+  },
+});

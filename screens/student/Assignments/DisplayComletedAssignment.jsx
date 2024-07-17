@@ -20,7 +20,7 @@ import SvgRenderer from "./SvgRenderer";
 export default function DisplayComletedAssignment({ navigation, route }) {
   const params = route.params;
   console.log(`params`, params?.item?.assignment);
-  console.log(`paramsdocumentLink`, params?.item);
+  console.log(`paramsdocumentLink`, params?.item?.assignment?.documents);
 
   const { theme } = useThemeContext();
   const [teacherDetails, setTeacherDetails] = useState(null);
@@ -452,8 +452,8 @@ export default function DisplayComletedAssignment({ navigation, route }) {
             </View>
           </View>
           <View style={{ marginTop: 10 }}></View>
-          {params?.item?.documentLink?.length > 0 &&
-            params?.item?.documentLink?.map((item, index) => (
+          {params?.item?.assignment?.documents?.length > 0 &&
+            params?.item?.assignment?.documents?.map((item, index) => (
               <View
                 style={{ marginTop: 20, display: "flex", alignItems: "center" }}
               >
@@ -470,7 +470,9 @@ export default function DisplayComletedAssignment({ navigation, route }) {
                     gap: 10,
                   }}
                   onPress={() => {
-                    Linking.openURL(item?.url);
+                    Linking.openURL(
+                      `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
+                    );
                   }}
                 >
                   <Ionicons name="document-outline" size={24} color="#FFFFFF" />

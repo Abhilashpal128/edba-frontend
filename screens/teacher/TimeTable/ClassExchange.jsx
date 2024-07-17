@@ -1,6 +1,7 @@
 import {
   Alert,
   FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -53,6 +54,8 @@ export default function ClassExchange({
   const [selectedTeacher, setSelectedTeacher] = useState();
   const [selectedclassforExchange, setSelectedClassForExchange] = useState();
   const [isClassSelected, setIsClassSelected] = useState(false);
+  const [requestStatus, setRequestStatus] = useState(null);
+  const [exchangeRequestId, setExchangeRequestId] = useState(null);
   const [selectedNotificationForTeacher, setSelectedNotificationForTeacher] =
     useState("");
   const navigation = useNavigation();
@@ -128,8 +131,24 @@ export default function ClassExchange({
     }
   };
 
+  const checkExchangeRequest = async () => {
+    console.log(classDetail?.id);
+    const response = await post("timetable/status-exchange", {
+      id: classDetail?.id,
+    });
+    console.log(`response?.data[0]?.status)`, response?.data);
+    if (response?.errCode == -1) {
+      console.log(`response?.data[0]?.status)`, response?.data[0]?.status);
+      setRequestStatus(response?.data[0]?.status);
+      setExchangeRequestId(response?.data[0]?.id);
+    } else {
+      setRequestStatus(null);
+    }
+  };
+
   useEffect(() => {
     fetchTeacherList();
+    checkExchangeRequest();
   }, [isFocused]);
 
   const handleExchangeRequest = async () => {
@@ -173,7 +192,55 @@ export default function ClassExchange({
     // }
   };
 
-  return (
+  // if (requestStatus) {
+  //   return (
+
+  //   );
+  // }
+
+  const cancelPendingRequest = async () => {
+    try {
+      const response = await post(`timetable/cancel-exchange`, {
+        id: exchangeRequestId,
+      });
+      if (response?.errCode == -1) {
+        Alert.alert("request cancelled successfully");
+      } else if (response?.errCode == 1) {
+        Alert.alert(response?.errMsg);
+      } else {
+        setExchangeRequestId(null);
+      }
+      setClassDetailTab(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  return requestStatus == "pending" ? (
+    <View>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalText}>
+            This lecture's Exchange Request is already pending.
+          </Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: "#007BFF" }]}
+              onPress={() => setClassDetailTab(false)}
+            >
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: "red" }]}
+              onPress={() => cancelPendingRequest()}
+            >
+              <Text style={styles.buttonText}>Cancel Request</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  ) : (
     <ScrollView>
       <View
         style={{
@@ -339,70 +406,70 @@ export default function ClassExchange({
             />
           </View>
           {/* <RNPickerSelect
-            onValueChange={(value) => {
-              setSelectedNotificationForTeacher(value);
-            }}
-            items={TeacherListData}
-            placeholder={{ label: "Select Teacher", value: "" }}
-            style={{
-              inputIOS: [
-                {
-                  borderWidth: 1,
-                  borderColor: "#ccc",
-                  paddingHorizontal: 10,
-                  borderRadius: 5,
-                  height: 36,
-                  color: theme.primaryTextColor,
-                },
-              ],
-              inputAndroid: [
-                {
-                  borderWidth: 1,
-                  borderColor: "#ccc",
-                  paddingHorizontal: 10,
-                  borderRadius: 5,
-                  height: 36,
-                  color: theme.primaryTextColor,
-                },
-              ],
-              iconContainer: {
-                top: 10,
-                right: 14,
-              },
-            }}
-            Icon={() => (
-              <AntDesign
-                name="caretdown"
-                size={12}
-                color={`${theme.secondaryTextColor}`}
-              />
-            )}
-            value={selectedTeacher} // Make sure selectedTeacher matches one of the value in items
-            useNativeAndroidPickerStyle={false}
-          /> */}
+      onValueChange={(value) => {
+        setSelectedNotificationForTeacher(value);
+      }}
+      items={TeacherListData}
+      placeholder={{ label: "Select Teacher", value: "" }}
+      style={{
+        inputIOS: [
+          {
+            borderWidth: 1,
+            borderColor: "#ccc",
+            paddingHorizontal: 10,
+            borderRadius: 5,
+            height: 36,
+            color: theme.primaryTextColor,
+          },
+        ],
+        inputAndroid: [
+          {
+            borderWidth: 1,
+            borderColor: "#ccc",
+            paddingHorizontal: 10,
+            borderRadius: 5,
+            height: 36,
+            color: theme.primaryTextColor,
+          },
+        ],
+        iconContainer: {
+          top: 10,
+          right: 14,
+        },
+      }}
+      Icon={() => (
+        <AntDesign
+          name="caretdown"
+          size={12}
+          color={`${theme.secondaryTextColor}`}
+        />
+      )}
+      value={selectedTeacher} // Make sure selectedTeacher matches one of the value in items
+      useNativeAndroidPickerStyle={false}
+    /> */}
           {/* <View style={{ marginVertical: 10 }}>
-            <View
-              style={{
-                height: 36,
-                width: "100%",
-                borderWidth: 2,
-                borderColor: "#B7B7B7",
-                borderRadius: 5,
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ paddingLeft: 10 }}>select Teacher</Text>
-              <AntDesign
-                name="caretdown"
-                size={12}
-                color="#777777"
-                style={{ padding: 10 }}
-              />
-            </View>
-          </View> */}
+      <View
+        style={{
+          height: 36,
+          width: "100%",
+          borderWidth: 2,
+          borderColor: "#B7B7B7",
+          borderRadius: 5,
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ paddingLeft: 10 }}>select Teacher</Text>
+        <AntDesign
+          name="caretdown"
+          size={12}
+          color="#777777"
+          style={{ padding: 10 }}
+        />
+      </View>
+    </View> */}
           <View
             style={{
               display: "flex",
@@ -577,4 +644,40 @@ export default function ClassExchange({
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  modalContainer: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+  button: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    textAlign: "center",
+  },
+});

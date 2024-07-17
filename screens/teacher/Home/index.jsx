@@ -30,6 +30,7 @@ import { useThemeContext } from "../../../hooks/useTheme";
 import { useSelector } from "react-redux";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Avatar } from "react-native-paper";
 
 const exchangeRequest = [
   { teacherName: "Abhilash", exchangeRequestId: "122233" },
@@ -365,16 +366,26 @@ export default function TeacherHome() {
             }}
             style={{ marginRight: 10 }}
           >
-            <Image
-              source={require(userProfileImage)}
-              resizeMode="contain"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroungColor: "black",
-              }}
-            />
+            {user?.ProfileImage != null ? (
+              <Image
+                source={{ uri: user?.ProfileImage }}
+                resizeMode="contain"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroungColor: "black",
+                }}
+              />
+            ) : (
+              <Avatar.Text
+                size={32}
+                label={`${user?.firstName?.slice(0, 1)}${user?.lastName?.slice(
+                  0,
+                  1
+                )}`}
+              />
+            )}
           </TouchableOpacity>
         </View>
       ),

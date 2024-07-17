@@ -14,11 +14,13 @@ import { useThemeContext } from "../../../hooks/useTheme";
 import RBSheet from "react-native-raw-bottom-sheet";
 import Logout from "../../teacher/Logout/Logout";
 import { useSelector } from "react-redux";
+import { Avatar } from "react-native-paper";
 // import { theme } from "../../../theming";
 
 export default function CustomDrawer({ navigation }) {
   const { theme } = useThemeContext();
   const userData = useSelector((state) => state.login.user);
+  console.log(`userData`, userData);
 
   const refRBSheet = useRef();
 
@@ -79,27 +81,40 @@ export default function CustomDrawer({ navigation }) {
               alignItems: "center",
             }}
           >
-            <View
-              style={{
-                height: 40,
-                width: "20%",
-                borderRadius: 20,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "#000000",
-              }}
-            >
-              {/* <FontAwesome name="institution" size={20} color="#fff" /> */}
-              <Image
-                source={require("../../../assets/logo.png")}
-                resizeMode="contain"
+            {userData?.ProfileImage != null ? (
+              <View
                 style={{
-                  width: 40,
                   height: 40,
+                  width: "20%",
                   borderRadius: 20,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "#000000",
                 }}
-              />
-            </View>
+              >
+                {/* <FontAwesome name="institution" size={20} color="#fff" /> */}
+                <Image
+                  source={{ uri: userData?.ProfileImage }}
+                  resizeMode="contain"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                  }}
+                />
+              </View>
+            ) : (
+              <View>
+                <Avatar.Text
+                  size={40}
+                  label={`${userData?.firstName?.slice(
+                    0,
+                    1
+                  )}${userData?.lastName?.slice(0, 1)} `}
+                  theme={{ colors: { primary: "#007EB0" } }}
+                />
+              </View>
+            )}
             <View style={{ width: "60%" }}>
               <Text
                 style={{
@@ -107,7 +122,7 @@ export default function CustomDrawer({ navigation }) {
                   color: theme.primaryTextColor,
                 }}
               >
-                Mr.Chirag Gupta
+                {userData?.firstName} {userData?.lastName}
               </Text>
               <Text
                 style={{
@@ -115,7 +130,7 @@ export default function CustomDrawer({ navigation }) {
                   color: theme.primaryTextColor,
                 }}
               >
-                ThecherId
+                {userData?.mobileNumber}
               </Text>
             </View>
             <View>

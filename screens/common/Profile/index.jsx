@@ -24,7 +24,7 @@ import {
   ScrollView,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useTheme, Button } from "react-native-paper";
+import { useTheme, Button, Avatar } from "react-native-paper";
 import { Feather } from "react-native-vector-icons";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { AntDesign } from "react-native-vector-icons";
@@ -44,7 +44,7 @@ export default function Profile() {
   const navigation = useNavigation();
   const refRBSheet = useRef();
   const user = useSelector((state) => state.login.user);
-  console.log(user);
+  console.log(`user user user`, user);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -100,7 +100,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={{ backgroundColor: theme.backgroundColor, flex: 1 }}>
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false} >
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
         <View style={{ height: 150 }}>
           <View style={{ marginTop: 50 }}>
             <View
@@ -118,29 +118,27 @@ export default function Profile() {
           </View>
           <View
             style={{
-              height: 120,
-              width: 120,
-              backgroundColor: theme.backgroundColor,
-              position: "absolute",
-              bottom: 10,
-              left: Dimensions.get("screen").width / 2 - 65,
-              borderRadius: 75,
-              padding: 5,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <View>
-              <Image
-                source={require("../../../assets/logo.png")}
-                resizeMode="contain"
-                style={{
-                  height: 110,
-                  width: 110,
-                  borderRadius: 55,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              />
-              {/* <Text
+            {user?.ProfileImage != null ? (
+              <View>
+                <Image
+                  source={{ uri: user?.ProfileImage }}
+                  resizeMode="contain"
+                  style={{
+                    height: 110,
+                    width: 110,
+                    borderRadius: 55,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                />
+                {/* <Text
                 style={{
                   fontSize: 52,
                   color: "#fff",
@@ -149,7 +147,12 @@ export default function Profile() {
                 
                 AP
               </Text> */}
-            </View>
+              </View>
+            ) : (
+              <View>
+                <Avatar.Text label="AB" />
+              </View>
+            )}
           </View>
         </View>
         <Text
@@ -158,6 +161,7 @@ export default function Profile() {
             fontWeight: "bold",
             color: theme.primaryTextColor,
             textAlign: "center",
+            marginTop: 10,
           }}
         >
           {/* {user?.employee?.fullName} */}
@@ -172,8 +176,8 @@ export default function Profile() {
           }}
         >
           {/* {user?.employee?.employeeId ? user?.employee?.employeeId : "-"} */}
-          E251234
-          {/* {user?.teacherId} */}
+
+          {user?.mobileNumber}
         </Text>
         <View
           style={{

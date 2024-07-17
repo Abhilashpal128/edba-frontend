@@ -41,7 +41,7 @@ export default function AssignGrade({
   };
 
   const openPdf = (link) => {
-    Linking.openURL(link);
+    Linking.openURL(`http://d7y6l36yifl1o.cloudfront.net/${link}`);
 
     // setIsFileOpend(link);
     console.log(`pdfUrl`, link);
@@ -186,38 +186,40 @@ export default function AssignGrade({
               >
                 File attatchment
               </Text>
-              {studentData?.documentLink != null ? (
-                <View
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <TouchableOpacity
+              {studentData?.documentLink?.length > 0 ? (
+                studentData?.documentLink?.map((item, index) => (
+                  <View
                     style={{
                       display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
                       justifyContent: "center",
-                      gap: 5,
-                      padding: 10,
-                      borderWidth: 1,
-                      borderColor: "#B7B7B7",
-                      borderRadius: 8,
+                      alignItems: "flex-start",
                     }}
-                    onPress={() => openPdf(studentData?.documentLink)}
                   >
-                    <MaterialCommunityIcons
-                      name="file-document-outline"
-                      color={theme.primarycolor}
-                      size={20}
-                    />
-                    <Text style={{ color: theme.primarycolor }}>
-                      {studentData?.documentLink}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 5,
+                        padding: 10,
+                        borderWidth: 1,
+                        borderColor: "#B7B7B7",
+                        borderRadius: 8,
+                      }}
+                      onPress={() => openPdf(item?.key)}
+                    >
+                      <MaterialCommunityIcons
+                        name="file-document-outline"
+                        color={theme.primarycolor}
+                        size={20}
+                      />
+                      <Text style={{ color: theme.primarycolor }}>
+                        {item?.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
               ) : (
                 <View>
                   <Text>Assignment Not submitted</Text>
@@ -235,22 +237,33 @@ export default function AssignGrade({
                 >
                   Grade
                 </Text>
-                <TextInput
+                <View
                   style={{
-                    height: 34,
-                    borderWidth: 1,
-                    width: "50%",
-                    borderRadius: 5,
-                    borderColor: "#B7B7B7",
-                    paddingLeft: 10,
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 5,
+                    alignItems: "center",
                   }}
-                  value={grade}
-                  onChangeText={handleChangeText}
-                  keyboardType="numeric"
-                  placeholder="00.00"
-                  placeholderTextColor={theme.secondaryTextColor}
-                  color={theme.primaryTextColor}
-                />
+                >
+                  <TextInput
+                    style={{
+                      height: 34,
+                      borderWidth: 1,
+                      width: "50%",
+                      borderRadius: 5,
+                      borderColor: "#B7B7B7",
+                      paddingLeft: 10,
+                    }}
+                    value={grade}
+                    onChangeText={handleChangeText}
+                    keyboardType="numeric"
+                    placeholder="00.00"
+                    placeholderTextColor={theme.secondaryTextColor}
+                    color={theme.primaryTextColor}
+                  />
+                  <Text style={{ fontSize: 30 }}>/</Text>
+                  <Text>{studentData?.totalMarks}</Text>
+                </View>
                 {gradeError ? (
                   <View>
                     <Text style={{ color: "red", marginTop: 5 }}>

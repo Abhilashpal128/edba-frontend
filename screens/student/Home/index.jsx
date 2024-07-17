@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import React, {
@@ -15,6 +16,8 @@ import React, {
 } from "react";
 import { useThemeContext } from "../../../hooks/useTheme";
 import StudentsTodaysClasses from "./TodaysClasses";
+import Icon from "react-native-vector-icons/Ionicons";
+import { Ionicons, Entypo } from "react-native-vector-icons";
 import Assignments from "./Assignments";
 import NoticesEvents from "../../common/NoticesEvents";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
@@ -22,6 +25,7 @@ import { HomeHeader } from "../../common/Header/HomeHeader";
 import { get, post } from "../../../utils/apis/StudentApis";
 import { useSelector } from "react-redux";
 import moment from "moment";
+import { Avatar } from "react-native-paper";
 
 const TodaysClassesData = [
   { id: "01", subject: "Computer Science", time: "09:00AM" },
@@ -112,6 +116,8 @@ export default function StudentHome() {
   const [classesLoading, setClassedLoading] = useState(true);
   const [assignmentLoading, setAssignmentLoading] = useState(true);
   const [unseenCount, setUnseenCount] = useState(0);
+  const user = useSelector((state) => state?.login?.user);
+  const userId = user?.id;
 
   const slideAnim = useRef(new Animated.Value(1000)).current;
   useEffect(() => {
@@ -218,7 +224,115 @@ export default function StudentHome() {
   }, []);
 
   useLayoutEffect(() => {
-    navigation.setOptions(HomeHeader({ navigation, theme }));
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <Icon
+            name="menu"
+            size={25}
+            color={theme.secondaryTextColor}
+            style={{ marginLeft: 10 }}
+          />
+        </TouchableOpacity>
+      ),
+
+      headerTitle: () => (
+        <View
+        // style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Text
+            style={{
+              color: theme.primaryTextColor,
+              fontSize: 18,
+              fontWeight: "bold",
+              // textAlign: "center",
+            }}
+          >
+            {/* {classDetailTab ? "Class details" : "TimeTable"} */}
+            Home
+          </Text>
+        </View>
+      ),
+
+      headerRight: () => (
+        <View
+          style={{
+            marginRight: 10,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            marginRight: 10,
+          }}
+        >
+          <TouchableOpacity
+            style={{ position: "relative" }}
+            onPress={() => navigation.navigate("Notification")}
+          >
+            {unseenCount > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  right: -3,
+                  top: -3,
+                  backgroundColor: "#FF9000",
+                  borderRadius: 5,
+                  width: 10,
+                  height: 10,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                  }}
+                ></Text>
+              </View>
+            )}
+            <Ionicons
+              name="notifications"
+              size={24}
+              color={theme.secondaryTextColor}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("Profile");
+            }}
+            style={{ marginRight: 10 }}
+          >
+            {user?.ProfileImage != null ? (
+              <Image
+                source={{ uri: user?.ProfileImage }}
+                resizeMode="contain"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroungColor: "black",
+                }}
+              />
+            ) : (
+              <Avatar.Text
+                size={32}
+                label={`${user?.firstName?.slice(0, 1)}${user?.lastName?.slice(
+                  0,
+                  1
+                )}`}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      ),
+      headerStyle: {
+        backgroundColor: theme.backgroundColor,
+      },
+      // headerTitleAlign: "center",
+      headerTintColor: "#000000",
+    });
   }, [navigation, theme]);
 
   const fetchAllNotifications = async () => {
@@ -242,6 +356,10 @@ export default function StudentHome() {
     } finally {
     }
   };
+
+  useEffect(() => {
+    fetchAllNotifications();
+  }, [isFocused]);
 
   return (
     <Animated.View
