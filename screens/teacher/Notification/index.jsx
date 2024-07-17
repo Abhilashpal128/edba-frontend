@@ -50,30 +50,30 @@ export default function TeacherNotification() {
   //   setNotifications(notificationData);
   // }, []);
 
-  const fetchNotifications = async () => {
-    try {
-      setRefreshing(true);
-      setIsLoading(true);
-      const storedNotifications = await AsyncStorage.getItem("notifications");
-      console.log(`Notifications`, storedNotifications);
+  // const fetchNotifications = async () => {
+  //   try {
+  //     setRefreshing(true);
+  //     setIsLoading(true);
+  //     const storedNotifications = await AsyncStorage.getItem("notifications");
+  //     console.log(`Notifications`, storedNotifications);
 
-      if (storedNotifications) {
-        const NotificationsArray = JSON.parse(storedNotifications);
-        const notificationSort = NotificationsArray?.reverse();
-        setNotifications(notificationSort);
-        console.log(`Notifications`, storedNotifications);
-        setRefreshing(false);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error("Failed to fetch notifications", error);
-      setRefreshing(false);
-      setIsLoading(false);
-    } finally {
-      setRefreshing(false);
-      setIsLoading(false);
-    }
-  };
+  //     if (storedNotifications) {
+  //       const NotificationsArray = JSON.parse(storedNotifications);
+  //       const notificationSort = NotificationsArray?.reverse();
+  //       setNotifications(notificationSort);
+  //       console.log(`Notifications`, storedNotifications);
+  //       setRefreshing(false);
+  //       setIsLoading(false);
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to fetch notifications", error);
+  //     setRefreshing(false);
+  //     setIsLoading(false);
+  //   } finally {
+  //     setRefreshing(false);
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const onRefresh = useCallback(() => {
     fetchAllNotifications();
@@ -92,6 +92,7 @@ export default function TeacherNotification() {
         id: userId,
       });
       if (response?.errCode == -1) {
+        const latestNotification = response?.data?.reverse();
         setNotifications(response?.data);
         setRefreshing(false);
         setIsLoading(false);
@@ -113,8 +114,8 @@ export default function TeacherNotification() {
   const ReadNotification = async (item) => {
     console.log(`Notification selected`, item);
     try {
-      console.log(`Notification selected`, item);
-      setExchangeRequestId(item?.exchangeRequestId);
+      console.log(`Notification selected`, item?.data?.exchangeRequestId);
+      setExchangeRequestId(item?.data?.exchangeRequestId);
       setSelectedNotification(item);
       setIsNotificationSeleted(true);
       refRBSheet?.current?.open();
@@ -141,11 +142,15 @@ export default function TeacherNotification() {
 
   const handlerejectRequest = async () => {
     try {
-      const response = await post("timetable/approve-exchange", {
+      const response = await post("timetable/reject-exchange", {
         id: exchangeRequestId,
       });
       if (response?.errCode == -1) {
         Alert.alert("Request Rejected Successfully");
+        refRBSheet?.current?.close();
+      } else if (response?.errCode == 1) {
+        Alert.alert(response?.errMsg);
+        refRBSheet?.current?.close();
       } else {
         console.log("error");
       }

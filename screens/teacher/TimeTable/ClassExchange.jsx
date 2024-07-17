@@ -118,12 +118,13 @@ export default function ClassExchange({
     });
 
     if (response?.errCode == -1) {
-      setTeacherList(
-        response?.data.map((item) => ({
+      const Tecaherlists = response?.data
+        ?.filter((item) => item?.id !== user?.teacherId)
+        .map((item) => ({
           label: item?.name,
           value: item?.id,
-        }))
-      );
+        }));
+      setTeacherList(Tecaherlists);
     }
   };
 

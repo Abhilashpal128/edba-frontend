@@ -170,21 +170,29 @@ export default function AddAssignment() {
         try {
           const uploadTasks = documents.map(async (document) => {
             let fileContents;
+            let tempUri = document.uri;
+
             if (document.uri.startsWith("content://")) {
               // Handle content URI
               const fileInfo = await FileSystem.getInfoAsync(document.uri);
               if (!fileInfo.exists) {
                 throw new Error(`File does not exist: ${document.uri}`);
               }
-              fileContents = await FileSystem.readAsStringAsync(document.uri, {
-                encoding: FileSystem.EncodingType.Base64,
+
+              // Copy content URI to a temporary file
+              const tempFileUri = FileSystem.documentDirectory + document.name;
+              await FileSystem.copyAsync({
+                from: document.uri,
+                to: tempFileUri,
               });
-            } else {
-              // Handle other URIs (file://, etc.)
-              fileContents = await FileSystem.readAsStringAsync(document.uri, {
-                encoding: FileSystem.EncodingType.Base64,
-              });
+              tempUri = tempFileUri;
             }
+
+            // Read the file from either the original URI or the temporary URI
+            fileContents = await FileSystem.readAsStringAsync(tempUri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
             const buffer = Buffer.from(fileContents, "base64");
             const params = {
               Bucket: "edba-dev-bucket",

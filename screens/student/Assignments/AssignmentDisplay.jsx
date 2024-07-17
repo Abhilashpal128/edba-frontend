@@ -37,10 +37,12 @@ export default function AssignmentDisplay({ navigation, route }) {
   const studentId = userData?.studentId;
 
   console.log(`Params Assignment`, params?.subject);
+  const AcessKeyId = "AKIAZQ3DTDYZMSHJC7JR";
+  const Accesskey = "shFANmgtLWMwQjMo619yZk94hA2yh4P25en492Km";
 
   AWS.config.update({
-    accessKeyId: "AKIAZQ3DTDYZMSHJC7JR",
-    secretAccessKey: "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",
+    accessKeyId: AcessKeyId,
+    secretAccessKey: Accesskey,
     region: "ap-south-1",
   });
 
@@ -204,9 +206,31 @@ export default function AssignmentDisplay({ navigation, route }) {
     }
     try {
       if (fileUri) {
-        const fileContents = await FileSystem.readAsStringAsync(fileUri, {
+        let fileContents;
+        let tempUri = fileUri;
+        if (fileUri.startsWith("content://")) {
+          // Handle content URI
+          const fileInfo = await FileSystem.getInfoAsync(fileUri);
+          if (!fileInfo.exists) {
+            throw new Error(`File does not exist: ${fileUri}`);
+          }
+
+          // Copy content URI to a temporary file
+          const tempFileUri = FileSystem.documentDirectory + fileName;
+          await FileSystem.copyAsync({
+            from: fileUri,
+            to: tempFileUri,
+          });
+          tempUri = tempFileUri;
+        }
+
+        // Read the file from either the original URI or the temporary URI
+        fileContents = await FileSystem.readAsStringAsync(tempUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
+        // const fileContents = await FileSystem.readAsStringAsync(fileUri, {
+        //   encoding: FileSystem.EncodingType.Base64,
+        // });
 
         const buffer = Buffer.from(fileContents, "base64");
 

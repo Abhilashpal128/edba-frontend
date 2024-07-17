@@ -140,7 +140,7 @@ export default function DisplayComletedAssignment({ navigation, route }) {
               fontWeight: "bold",
             }}
           >
-            {params.subject.subjectName}
+            {params?.subject?.subjectName}
           </Text>
         </View>
       ),

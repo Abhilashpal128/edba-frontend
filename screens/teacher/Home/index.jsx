@@ -112,7 +112,7 @@ export default function TeacherHome() {
       setIsLoading(false);
     } finally {
       setIsLoading(false);
-      setRefreshing(true);
+      setRefreshing(false);
     }
 
     // const response = await get("events");
