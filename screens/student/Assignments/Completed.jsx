@@ -240,14 +240,14 @@ export default function Completed({ navigation, route }) {
                       borderWidth: item?.id == activeTab ? 1 : 0,
                     }}
                   >
-                    {(() => {
+                    {/* {(() => {
                       if (Subjects[item?.slug]) {
                         return <View>{Subjects[item?.slug]()}</View>;
                       }
-                    })()}
-                    {/* {item?.svg != null && (
+                    })()} */}
+                    {item?.svg != null && (
                       <SvgRenderer svgContent={`${item.svg}`} />
-                    )} */}
+                    )}
                     <Text
                       numberOfLines={1}
                       style={{

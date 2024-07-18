@@ -232,51 +232,50 @@ export default function Pending({ navigation, route }) {
               <SubjectShimmerEffect />
             </ScrollView>
           ) : (
-            // subjects?.length > 0 && (
-            //   <ScrollView
-            //     showsHorizontalScrollIndicator={false}
-            //     horizontal={true}
-            //   >
-            //     {subjects?.map((item, index) => {
-            //       return (
-            //         <TouchableOpacity
-            //           onPress={() => handleSubjectSelect(item?.id)}
-            //           key={index}
-            //           style={{
-            //             width: 100,
-            //             height: 75,
-            //             backgroundColor: hexToRgba(item?.colorCode, 0.15),
-            //             marginRight: 10,
-            //             borderRadius: 8,
-            //             alignItems: "center",
-            //             justifyContent: "center",
-            //             borderColor: item.color,
-            //             borderWidth: item?.id == activeTab ? 1 : 0,
-            //           }}
-            //         >
-            //           {/* {(() => {
-            //             if (Subjects[item?.slug]) {
-            //               return <View>{Subjects[item?.slug]()}</View>;
-            //             }
-            //           })()} */}
-            //           {item?.svg != null && (
-            //             <SvgRenderer svgContent={`${item.svg}`} />
-            //           )}
-            //           <Text
-            //             numberOfLines={1}
-            //             style={{
-            //               fontSize: 14,
-            //               marginTop: 6,
-            //             }}
-            //           >
-            //             {item?.subjectName}
-            //           </Text>
-            //         </TouchableOpacity>
-            //       );
-            //     })}
-            //   </ScrollView>
-            // )
-            <View></View>
+            subjects?.length > 0 && (
+              <ScrollView
+                showsHorizontalScrollIndicator={false}
+                horizontal={true}
+              >
+                {subjects?.map((item, index) => {
+                  return (
+                    <TouchableOpacity
+                      onPress={() => handleSubjectSelect(item?.id)}
+                      key={index}
+                      style={{
+                        width: 100,
+                        height: 75,
+                        backgroundColor: hexToRgba(item?.colorCode, 0.15),
+                        marginRight: 10,
+                        borderRadius: 8,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderColor: item.color,
+                        borderWidth: item?.id == activeTab ? 1 : 0,
+                      }}
+                    >
+                      {/* {(() => {
+                        if (Subjects[item?.slug]) {
+                          return <View>{Subjects[item?.slug]()}</View>;
+                        }
+                      })()} */}
+                      {item?.svg != null && (
+                        <SvgRenderer svgContent={`${item.svg}`} />
+                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 14,
+                          marginTop: 6,
+                        }}
+                      >
+                        {item?.subjectName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )
           )}
         </View>
         <View style={{ marginVertical: 20 }}>
