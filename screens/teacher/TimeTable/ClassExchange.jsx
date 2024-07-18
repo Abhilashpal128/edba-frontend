@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Modal,
@@ -56,6 +57,7 @@ export default function ClassExchange({
   const [isClassSelected, setIsClassSelected] = useState(false);
   const [requestStatus, setRequestStatus] = useState(null);
   const [exchangeRequestId, setExchangeRequestId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedNotificationForTeacher, setSelectedNotificationForTeacher] =
     useState("");
   const navigation = useNavigation();
@@ -79,6 +81,7 @@ export default function ClassExchange({
 
   const hendleSelectTeacher = async (value) => {
     try {
+      setIsLoading(true);
       console.log(`value`, value);
       setSelectedTeacher(value);
       const response = await post("timetable/search", {
@@ -87,13 +90,16 @@ export default function ClassExchange({
       });
       // console.log(`classExchange response`, response);
       if (response?.errCode == -1) {
+        setIsLoading(false);
         console.log(`classExchange response`, response);
         setLectureData(response?.data);
       } else {
         Alert.alert(response?.errMsg);
+        setIsLoading(false);
       }
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
     }
   };
 
@@ -138,7 +144,7 @@ export default function ClassExchange({
     });
     console.log(`response?.data[0]?.status)`, response?.data);
     if (response?.errCode == -1) {
-      console.log(`response?.data[0]?.status)`, response?.data[0]?.status);
+      console.log(`response?.data[0]?.status)`, response?.data[0]);
       setRequestStatus(response?.data[0]?.status);
       setExchangeRequestId(response?.data[0]?.id);
     } else {
@@ -152,6 +158,7 @@ export default function ClassExchange({
   }, [isFocused]);
 
   const handleExchangeRequest = async () => {
+    setIsLoading(true);
     const fromTimeId = classDetail?.id;
     const toTimeId = selectedclassforExchange?.id;
     const fromTeacherId = user?.teacherId;
@@ -162,13 +169,16 @@ export default function ClassExchange({
       if (response?.errCode == -1) {
         Alert.alert("Exchange request sent");
         setClassDetailTab(false);
+        setIsLoading(false);
       } else {
         Alert.alert(
           response?.errMsg ? response.errMsg : "error while sending request"
         );
+        setIsLoading(false);
       }
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
     }
 
     // const requesterId = "112233";
@@ -199,6 +209,7 @@ export default function ClassExchange({
   // }
 
   const cancelPendingRequest = async () => {
+    console.log(`exchangeRequestId`, exchangeRequestId);
     try {
       const response = await post(`timetable/cancel-exchange`, {
         id: exchangeRequestId,
@@ -523,7 +534,11 @@ export default function ClassExchange({
             </View>
           </View>
           <View>
-            {Lecturesdata.length > 0 ? (
+            {isLoading == true ? (
+              <View>
+                <ActivityIndicator size={"large"} />
+              </View>
+            ) : Lecturesdata.length > 0 ? (
               <ScrollView>
                 <View
                   style={{

@@ -311,7 +311,7 @@ const LoginScreen = () => {
                       alignItems: "center",
                     }}
                   >
-                    <Checkbox
+                    {/*<Checkbox
                       status={isChecked ? "checked" : "unchecked"}
                       onPress={() => {
                         setIsChecked(!isChecked);
@@ -320,7 +320,7 @@ const LoginScreen = () => {
                     />
                     <Text style={{ color: theme.primaryTextColor }}>
                       Remember me
-                    </Text>
+                    </Text> */}
                   </View>
                   <TouchableOpacity
                     onPress={() => {

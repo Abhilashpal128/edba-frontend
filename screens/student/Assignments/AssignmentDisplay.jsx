@@ -31,6 +31,7 @@ export default function AssignmentDisplay({ navigation, route }) {
   const [fileName, setFileName] = useState(null);
   const [submitButtonPressed, setisSubmitButtonPressed] = useState(false);
   const [teacherDetails, setTeacherDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const params = route.params;
   const { theme } = useThemeContext();
   const userData = useSelector((state) => state?.login?.user);
@@ -204,6 +205,7 @@ export default function AssignmentDisplay({ navigation, route }) {
       setisSubmitButtonPressed(true);
       return;
     }
+    setIsLoading(true);
     try {
       if (fileUri) {
         let fileContents;
@@ -269,15 +271,18 @@ export default function AssignmentDisplay({ navigation, route }) {
         if (response?.errCode == -1) {
           Alert.alert("Assignment Submitted Successfully");
           navigation.navigate("Assignments");
+          setIsLoading(false);
         } else {
           Alert.alert(
             response?.errMsg
               ? JSON.stringify(response?.errMsg)
               : "Error submitting assignment"
           );
+          setIsLoading(false);
         }
       } catch (error) {
         console.log(`error in submitting student Assignment`, error);
+        setIsLoading(false);
       }
 
       // Optionally, send the document link to your API
@@ -328,8 +333,6 @@ export default function AssignmentDisplay({ navigation, route }) {
   //     });
   //   });
   // };
-
- 
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
@@ -563,54 +566,66 @@ export default function AssignmentDisplay({ navigation, route }) {
             </View>
           </View>
           <View style={{ marginTop: 10 }}></View>
-          {params?.assignment?.documents?.length > 0 &&
-            params?.assignment?.documents?.map((item, index) => (
-              <View
-                style={{ marginTop: 20, display: "flex", alignItems: "center" }}
-              >
-                <TouchableOpacity
+          {params?.assignment?.documents?.length > 0 && (
+            <View style={{ marginTop: 20 }}>
+              <Text>Attatchments :</Text>
+              {params?.assignment?.documents?.map((item, index) => (
+                <View
                   style={{
-                    height: 46,
-                    width: "100%",
-                    backgroundColor: "#AAAAAA",
-                    borderRadius: 5,
                     display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
                     alignItems: "center",
-                    gap: 10,
                   }}
-                  onPress={() => {
-                    Linking.openURL(
-                      `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
-                    );
-                  }}
+                  key={index}
                 >
-                  <Ionicons name="document-outline" size={24} color="#FFFFFF" />
-                  <Text
+                  <TouchableOpacity
                     style={{
-                      fontSize: 14,
-                      color: "#fff",
-                      fontWeight: "semibold",
+                      height: 46,
+                      width: "100%",
+                      backgroundColor: "#AAAAAA",
+                      borderRadius: 5,
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                    onPress={() => {
+                      Linking.openURL(
+                        `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
+                      );
                     }}
                   >
-                    {item?.label}
-                  </Text>
-                </TouchableOpacity>
-                {/* <Button
-                  mode={"contained"}
-                  buttonColor="#2B78CA"
-                  contentStyle={{ height: 40 }}
-                  labelStyle={{
-                    fontSize: 14,
-                    color: "#fff",
-                  }}
-                  style={{ borderRadius: 8 }}
-                >
-                  Submit Assignment
-                </Button> */}
-              </View>
-            ))}
+                    <Ionicons
+                      name="document-outline"
+                      size={24}
+                      color="#FFFFFF"
+                    />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#fff",
+                        fontWeight: "semibold",
+                      }}
+                    >
+                      {item?.label}
+                    </Text>
+                  </TouchableOpacity>
+                  {/* <Button
+                      mode={"contained"}
+                      buttonColor="#2B78CA"
+                      contentStyle={{ height: 40 }}
+                      labelStyle={{
+                        fontSize: 14,
+                        color: "#fff",
+                      }}
+                      style={{ borderRadius: 8 }}
+                    >
+                      Submit Assignment
+                    </Button> */}
+                </View>
+              ))}
+            </View>
+          )}
           <View style={{ marginTop: 10 }}>
             <TouchableOpacity
               style={{
@@ -621,6 +636,7 @@ export default function AssignmentDisplay({ navigation, route }) {
                 borderRadius: 8,
                 alignItems: "center",
                 justifyContent: "center",
+                marginTop: 20,
               }}
               onPress={() => {
                 pickFile();

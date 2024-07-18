@@ -1,6 +1,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useNavigationState,
+  useRoute,
+} from "@react-navigation/native";
 import {
   Foundation,
   SimpleLineIcons,
@@ -8,16 +12,53 @@ import {
   Entypo,
 } from "react-native-vector-icons";
 import { useThemeContext } from "../../../hooks/useTheme";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setActiveTab } from "../../../Redux/slices/ActiveTabSlice";
 // import { theme } from "../../../theming";
+
+const getFocusedRouteNameFromState = (state) => {
+  if (!state || typeof state.index !== "number") {
+    return null;
+  }
+
+  const route = state.routes[state.index];
+
+  if (route.state) {
+    return getFocusedRouteNameFromState(route.state);
+  }
+
+  return route.name;
+};
 
 export default function DrawerRoutingcontent() {
   const { theme } = useThemeContext();
   const navigation = useNavigation();
-  const route = useRoute();
+  // const routes = useNavigationState((state) => state.routes);
   const userData = useSelector((state) => state.login.user);
+  // const activeTab = useSelector((state) => state.activeTab.activeTab);
+  const routeState = useNavigationState((state) => state);
+  const dispatch = useDispatch();
+  const routeIndex = useNavigationState((state) => state.index);
 
-  const [activeTab, setActiveTab] = useState("Home");
+  let activeTab = getFocusedRouteNameFromState(routeState) || "Home";
+  console.log(
+    `const activeTab = getFocusedRouteNameFromState(routeState);`,
+    activeTab
+  );
+  if (
+    !activeTab ||
+    activeTab == "TeacherStack" ||
+    activeTab == "StudentStack"
+  ) {
+    activeTab = "Home";
+  }
+
+  // const currentRouteName = routes[routeIndex].name;
+  // console.log(`routeeeeeeeeeeeee`, routeIndex);
+  // console.log(`routeeeeeeeeeeeee`, routes);
+  // console.log(`routeeeeeeeeeeeee namecurrentRouteName`, currentRouteName);
+
+  // const [activeTab1, setActiveTab1] = useState("Home");
   const [isSubScreenOpend, setSubScreenOpend] = useState(false);
   console.log(activeTab);
   let sideMenu = [];
@@ -25,7 +66,7 @@ export default function DrawerRoutingcontent() {
   userData &&
     (userData?.role == "student"
       ? (sideMenu = [
-          { name: "Home", icon: "home-outline", screen: "StudentHome" },
+          { name: "Home", icon: "home-outline", screen: "Home" },
           {
             name: "Assingment/Homework",
             icon: "clipboard-text-outline",
@@ -88,7 +129,8 @@ export default function DrawerRoutingcontent() {
     if (item.subScreens) {
       setSubScreenOpend((prev) => !prev);
     } else {
-      setActiveTab(item.screen);
+      // setActiveTab(item.screen);
+      dispatch(setActiveTab(item.screen));
       navigation.navigate(item?.screen);
     }
   };

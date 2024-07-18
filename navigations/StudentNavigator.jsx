@@ -37,7 +37,7 @@ const StudentStack = () => {
         ...TransitionPresets.SlideFromRightIOS,
       }}
     >
-      <Stack.Screen name="StudentHome" component={StudentHome} />
+      <Stack.Screen name="Home" component={StudentHome} />
       <Stack.Screen name="Profile" component={StudentProfile} />
       <Stack.Screen name="Assignments" component={StudentsAssignments} />
       <Stack.Screen name="TimeTable" component={StudentTimeTable} />
@@ -73,7 +73,7 @@ const StudentNavigator = () => {
       screenOptions={{ headerShown: false }}
       drawerContent={(props) => <CustomDrawer {...props} />}
     >
-      <Drawer.Screen name="Home" component={StudentStack} />
+      <Drawer.Screen name="StudentStack" component={StudentStack} />
     </Drawer.Navigator>
   );
 };

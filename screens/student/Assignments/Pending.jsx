@@ -152,7 +152,9 @@ export default function Pending({ navigation, route }) {
       const response = await post("classes/student-subject", {
         studentId: StudentId,
       });
+      console.log(`setIsSubjectLoading`, response);
       if (response?.errCode == -1) {
+        console.log(`setIsSubjectLoading`, response?.data[0]);
         setSubjects(response?.data);
         setIsSubjectLoading(false);
       } else {
@@ -181,13 +183,14 @@ export default function Pending({ navigation, route }) {
     if (!subjectSelectedRedirect) {
       fetchPendingAssignments();
     }
-  }, [subjectSelectedRedirect]);
+  }, [subjectSelectedRedirect, isFocused]);
 
   useEffect(() => {
     fetchSubjectList();
-  }, []);
+  }, [isFocused]);
 
   const handleSubjectSelect = async (subjectId) => {
+    console.log(`subjectId`, subjectId);
     try {
       setActiveTab(subjectId);
       const response = await post(`assignments/pending-student`, {
@@ -229,50 +232,51 @@ export default function Pending({ navigation, route }) {
               <SubjectShimmerEffect />
             </ScrollView>
           ) : (
-            subjects?.length > 0 && (
-              <ScrollView
-                showsHorizontalScrollIndicator={false}
-                horizontal={true}
-              >
-                {subjects?.map((item, index) => {
-                  return (
-                    <TouchableOpacity
-                      onPress={() => handleSubjectSelect(item?.id)}
-                      key={index}
-                      style={{
-                        width: 100,
-                        height: 75,
-                        backgroundColor: hexToRgba(item?.colorCode, 0.15),
-                        marginRight: 10,
-                        borderRadius: 8,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderColor: item.color,
-                        borderWidth: item?.id == activeTab ? 1 : 0,
-                      }}
-                    >
-                      {/* {(() => {
-                        if (Subjects[item?.slug]) {
-                          return <View>{Subjects[item?.slug]()}</View>;
-                        }
-                      })()} */}
-                      {item?.svg != null && (
-                        <SvgRenderer svgContent={`${item.svg}`} />
-                      )}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 14,
-                          marginTop: 6,
-                        }}
-                      >
-                        {item?.subjectName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )
+            // subjects?.length > 0 && (
+            //   <ScrollView
+            //     showsHorizontalScrollIndicator={false}
+            //     horizontal={true}
+            //   >
+            //     {subjects?.map((item, index) => {
+            //       return (
+            //         <TouchableOpacity
+            //           onPress={() => handleSubjectSelect(item?.id)}
+            //           key={index}
+            //           style={{
+            //             width: 100,
+            //             height: 75,
+            //             backgroundColor: hexToRgba(item?.colorCode, 0.15),
+            //             marginRight: 10,
+            //             borderRadius: 8,
+            //             alignItems: "center",
+            //             justifyContent: "center",
+            //             borderColor: item.color,
+            //             borderWidth: item?.id == activeTab ? 1 : 0,
+            //           }}
+            //         >
+            //           {/* {(() => {
+            //             if (Subjects[item?.slug]) {
+            //               return <View>{Subjects[item?.slug]()}</View>;
+            //             }
+            //           })()} */}
+            //           {item?.svg != null && (
+            //             <SvgRenderer svgContent={`${item.svg}`} />
+            //           )}
+            //           <Text
+            //             numberOfLines={1}
+            //             style={{
+            //               fontSize: 14,
+            //               marginTop: 6,
+            //             }}
+            //           >
+            //             {item?.subjectName}
+            //           </Text>
+            //         </TouchableOpacity>
+            //       );
+            //     })}
+            //   </ScrollView>
+            // )
+            <View></View>
           )}
         </View>
         <View style={{ marginVertical: 20 }}>

@@ -447,35 +447,36 @@ export default function TeacherNotification() {
               {selectedNotification?.body}
             </Text>
           </View>
-          {selectedNotification?.title == "Timetable Exchange Request" && (
-            <View style={{ gap: 20, marginTop: 20 }}>
-              <View style={{ marginHorizontal: 20 }}>
-                {/* <Text style={{ color: theme?.primaryTextColor }}>
+          {selectedNotification?.title == "Timetable Exchange Request" &&
+            selectedNotification?.Exchangestatus == "pending" && (
+              <View style={{ gap: 20, marginTop: 20 }}>
+                <View style={{ marginHorizontal: 20 }}>
+                  {/* <Text style={{ color: theme?.primaryTextColor }}>
                   {selectedNotification?.teacher} wants to Exchange{" "}
                   {selectedNotification?.Subject} lecture of{" "}
                   {selectedNotification?.class}, Romm No:{" "}
                   {selectedNotification?.roomNo}
                 </Text> */}
+                </View>
+                <View
+                  style={{
+                    width: "60%",
+                    marginHorizontal: "auto",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Button title="Approve" onPress={handleApproveRequest} />
+                  <Button
+                    title="Reject"
+                    color="red"
+                    onPress={handlerejectRequest}
+                  />
+                </View>
               </View>
-              <View
-                style={{
-                  width: "60%",
-                  marginHorizontal: "auto",
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Button title="Approve" onPress={handleApproveRequest} />
-                <Button
-                  title="Reject"
-                  color="red"
-                  onPress={handlerejectRequest}
-                />
-              </View>
-            </View>
-          )}
+            )}
         </View>
       </RBSheet>
     </SafeAreaView>

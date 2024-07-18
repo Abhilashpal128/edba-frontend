@@ -387,11 +387,11 @@ export default function StudentHome() {
             setClassedLoading={setClassedLoading}
             classesLoading={classesLoading}
           />
-          <Assignments
+          {/* <Assignments
             subjectList={subjectList}
             setAssignmentLoading={setAssignmentLoading}
             assignmentLoading={assignmentLoading}
-          />
+          /> */}
           <NoticesEvents
             Events={Notices}
             isLoading={isLoading}
