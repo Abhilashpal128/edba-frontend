@@ -406,6 +406,7 @@ export default function DisplayComletedAssignment({ navigation, route }) {
                       fontSize: 14,
                       color: "#fff",
                       fontWeight: "semibold",
+                      flexWrap: "wrap",
                     }}
                   >
                     {item?.label}

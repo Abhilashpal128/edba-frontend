@@ -3,6 +3,7 @@ import {
   Alert,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   SectionList,
   StyleSheet,
   Text,
@@ -111,25 +112,26 @@ export default function TeacherAssignment({ navigation }) {
   const isFocused = useIsFocused();
   const [refreshing, setRefreshing] = useState(false);
 
+  const fetchassignmentData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await get(`assignments/group/${TeacherId}`);
+      if (response?.errCode == -1) {
+        setAssignments(response.data);
+        setIsLoading(false);
+        console.log(`Assignments Response`, response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    const fetchassignmentData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await get(`assignments/group/${TeacherId}`);
-        if (response?.errCode == -1) {
-          setAssignments(response.data);
-          setIsLoading(false);
-          console.log(`Assignments Response`, response.data);
-        }
-      } catch (error) {
-        console.log(error);
-        setIsLoading(false);
-      } finally {
-        setIsLoading(false);
-        setRefreshing(false);
-      }
-    };
 
     fetchassignmentData();
   }, []);
@@ -165,6 +167,11 @@ export default function TeacherAssignment({ navigation }) {
   const getAssignmentonSubject = async () => {};
 
   const handleStatusChange = async (value) => {
+    console.log(`ALLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLll`, value);
+    if (value == "All") {
+      fetchassignmentData();
+      return true;
+    }
     setselectedSubject(value);
     try {
       const response = await post("assignments/subject", {
@@ -234,7 +241,7 @@ export default function TeacherAssignment({ navigation }) {
     });
   }, [navigation, theme]);
 
-  const renderItem = ({ item }) => (
+  const renderItem = (item) => (
     <TouchableOpacity
       style={{
         display: "flex",
@@ -286,7 +293,7 @@ export default function TeacherAssignment({ navigation }) {
               Due date:{" "}
             </Text>
             <Text style={{ color: theme.primaryTextColor, fontSize: 12 }}>
-              {item.dueDate}
+              {item?.dueDate}
             </Text>
           </View>
         </View>
@@ -337,7 +344,7 @@ export default function TeacherAssignment({ navigation }) {
               color: theme.secondaryTextColor,
             }}
           >
-            {item.description}
+            {item?.description}
           </Text>
         </View>
         <View
@@ -369,7 +376,7 @@ export default function TeacherAssignment({ navigation }) {
                 color: "#30A81D",
               }}
             >
-              {item.completed}
+              {item?.completed}
             </Text>
           </View>
           <View
@@ -395,7 +402,7 @@ export default function TeacherAssignment({ navigation }) {
               }}
             >
               {" "}
-              {item.pending}
+              {item?.pending}
             </Text>
           </View>
         </View>
@@ -408,26 +415,193 @@ export default function TeacherAssignment({ navigation }) {
       <Text style={styles.textColor}>Pending: {item.pending}</Text> */}
     </TouchableOpacity>
   );
-  const renderSectionHeader = ({ section: { subject } }) => (
-    <View style={{ paddingLeft: 10 }}>
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "bold",
-          marginVertical: 10,
-          color: theme.primaryTextColor,
-        }}
-      >
-        {subject}
-      </Text>
-    </View>
-  );
+  // const renderSectionHeader = ({ section: { subject } }) => (
+  //   <View style={{ paddingLeft: 10 }}>
+  //     <Text
+  //       style={{
+  //         fontSize: 18,
+  //         fontWeight: "bold",
+  //         marginVertical: 10,
+  //         color: theme.primaryTextColor,
+  //       }}
+  //     >
+  //       {subject}
+  //     </Text>
+  //   </View>
+  // );
 
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
   }, []);
+
+  // const renderItem = (item) => (
+  //   <TouchableOpacity
+  //     key={item.id} // Ensure each item has a unique key
+  //     style={{
+  //       marginBottom: 20,
+  //       backgroundColor: theme.cardBackground,
+  //       borderRadius: 8,
+  //       paddingVertical: 12,
+  //       paddingHorizontal: 16,
+  //     }}
+  //     onPress={() => {
+  //       navigation.navigate("ShowAssignment", { item });
+  //     }}
+  //   >
+  //     <Text
+  //       style={{
+  //         fontSize: 16,
+  //         fontWeight: "bold",
+  //         color: theme.primaryTextColor,
+  //       }}
+  //     >
+  //       {item.name}
+  //     </Text>
+  //     <Text
+  //       style={{ fontSize: 14, color: theme.primaryTextColor, marginTop: 8 }}
+  //     >
+  //       {item.description}
+  //     </Text>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginTop: 12,
+  //       }}
+  //     >
+  //       <Text style={{ fontSize: 12, color: theme.primaryTextColor }}>
+  //         Due date: {item.dueDate}
+  //       </Text>
+  //       <TouchableOpacity
+  //         onPress={() => {
+  //           navigation.navigate("Grade", { AssignmentData: item });
+  //         }}
+  //       >
+  //         <Text
+  //           style={{
+  //             color: theme.primarycolor,
+  //             fontSize: 14,
+  //             fontWeight: "bold",
+  //           }}
+  //         >
+  //           Grade
+  //         </Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginTop: 8,
+  //       }}
+  //     >
+  //       <Text style={{ fontSize: 12, color: theme.primaryTextColor }}>
+  //         Completed: {item.completed}
+  //       </Text>
+  //       <Text style={{ fontSize: 12, color: theme.primaryTextColor }}>
+  //         Pending: {item.pending}
+  //       </Text>
+  //     </View>
+  //   </TouchableOpacity>
+  // );
+
+  // const renderItem = (item) => (
+  //   <TouchableOpacity
+  //     key={item.id} // Ensure each item has a unique key
+  //     style={{
+  //       marginBottom: 20,
+  //       backgroundColor: theme.cardBackground,
+  //       borderRadius: 8,
+  //       paddingVertical: 12,
+  //       paddingHorizontal: 16,
+  //     }}
+  //     onPress={() => {
+  //       navigation.navigate("ShowAssignment", { item });
+  //     }}
+  //   >
+  //     <Text
+  //       style={{
+  //         fontSize: 16,
+  //         fontWeight: "bold",
+  //         color: theme.primaryTextColor,
+  //       }}
+  //     >
+  //       {item.name}
+  //     </Text>
+  //     <Text
+  //       style={{ fontSize: 14, color: theme.primaryTextColor, marginTop: 8 }}
+  //     >
+  //       {item.description}
+  //     </Text>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginTop: 12,
+  //       }}
+  //     >
+  //       <Text style={{ fontSize: 12, color: theme.primaryTextColor }}>
+  //         Due date: {item.dueDate}
+  //       </Text>
+  //       <TouchableOpacity
+  //         onPress={() => {
+  //           navigation.navigate("Grade", {
+  //             AssignmentData: item,
+  //           });
+  //         }}
+  //       >
+  //         <Text
+  //           style={{
+  //             color: theme.primarycolor,
+  //             fontSize: 14,
+  //             fontWeight: 500,
+  //             textDecorationLine: "underline",
+  //           }}
+  //         >
+  //           Grade
+  //         </Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //     <View
+  //       style={{
+  //         flexDirection: "row",
+  //         justifyContent: "space-between",
+  //         marginTop: 8,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           display: "flex",
+  //           flexDirection: "row",
+  //         }}
+  //       >
+  //         <Text
+  //           style={{
+  //             fontSize: 12,
+  //             fontWeight: 600,
+  //             color: theme.primaryTextColor,
+  //           }}
+  //         >
+  //           Completed :{" "}
+  //         </Text>
+  //         <Text
+  //           style={{
+  //             fontSize: 12,
+  //             fontWeight: 500,
+  //             color: "#30A81D",
+  //           }}
+  //         >
+  //           {item.completed}
+  //         </Text>
+  //       </View>
+  //       <Text style={{ fontSize: 12, color: theme.primaryTextColor }}>
+  //         Pending: {item.pending}
+  //       </Text>
+  //     </View>
+  //   </TouchableOpacity>
+  // );
 
   useEffect(() => {
     fetchAssignments();
@@ -518,8 +692,8 @@ export default function TeacherAssignment({ navigation }) {
               handleStatusChange(value);
             }}
             items={subjectList}
-            placeholder={{ label: " Select class", value: "" }}
-            style={{
+            placeholder={{ label: "All Assignments", value: "All" }}
+            style={{  
               inputIOS: [
                 {
                   borderWidth: 1,
@@ -557,8 +731,14 @@ export default function TeacherAssignment({ navigation }) {
           />
         </View>
         {assignments?.length > 0 ? (
-          <View style={{ marginHorizontal: 20 }}>
-            <SectionList
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ marginHorizontal: 20, height: "100%" }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {/* <SectionList
               sections={assignments.map(({ subject, details }) => ({
                 subject,
                 data: details,
@@ -569,8 +749,43 @@ export default function TeacherAssignment({ navigation }) {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
-            />
-          </View>
+            /> */}
+            <ScrollView style={{ marginBottom: 50 }}>
+              {assignments.map((assignment) => (
+                <View key={assignment.subject}>
+                  <View style={{ paddingLeft: 10 }}>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        marginVertical: 10,
+                        color: theme.primaryTextColor,
+                      }}
+                    >
+                      {assignment.subject}
+                    </Text>
+                  </View>
+                  {assignment.details.map((item) => renderItem(item))}
+                </View>
+              ))}
+            </ScrollView>
+            {/* <SectionList
+              sections={assignments.map(({ subject, details }) => ({
+                title: subject,
+                data: details,
+              }))}
+              keyExtractor={(item, index) => `${item.id}-${index}`} // Ensure each key is unique
+              renderItem={renderItem}
+              renderSectionHeader={renderSectionHeader}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              // Optional: Performance optimizations
+              initialNumToRender={10} // Render a few items initially to improve performance
+              maxToRenderPerBatch={10} // Render more items per batch
+              windowSize={21} // Number of items in the window (7 * 3)
+            /> */}
+          </ScrollView>
         ) : (
           <View
             style={{

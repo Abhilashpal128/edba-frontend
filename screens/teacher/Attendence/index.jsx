@@ -194,6 +194,7 @@ export default function TeacherAttendence() {
 
   const handleClassSelect = async (value) => {
     setRefreshing(true);
+    console.log(`value`, value);
     fetchTeacherSubjects(value);
     try {
       setClassError(false);
@@ -626,7 +627,7 @@ export default function TeacherAttendence() {
               <RNPickerSelect
                 onValueChange={handleClassSelect}
                 items={classes}
-                value={selectedClass !== null ? selectedClass?.value : ""}
+                value={selectedClass != null ? selectedClass?.value : ""}
                 style={{
                   inputIOS: {
                     fontSize: 16,
@@ -649,7 +650,7 @@ export default function TeacherAttendence() {
                     paddingRight: 30, // to ensure the text is never behind the icon
                   },
                 }}
-                placeholder={{ label: "Select Class", value: null }}
+                placeholder={{}}
                 color={theme.primaryTextColor}
               />
             </View>

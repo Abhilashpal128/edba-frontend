@@ -119,6 +119,12 @@ export default function TeacherNotification() {
       setSelectedNotification(item);
       setIsNotificationSeleted(true);
       refRBSheet?.current?.open();
+      console.log(
+        ` if (notification?.id === item?.id) {
+          return { ...notification, seen: true };
+        }`,
+        notifications
+      );
       const updatedNotifications = notifications.map((notification) => {
         if (notification?.id === item?.id) {
           return { ...notification, seen: true };
@@ -165,6 +171,7 @@ export default function TeacherNotification() {
         id: exchangeRequestId,
       });
       if (response?.errCode == -1) {
+        fetchAllNotifications();
         Alert.alert("Request Approved Successfully");
         refRBSheet?.current?.close();
       } else if (response?.errCode == 1) {
@@ -448,7 +455,7 @@ export default function TeacherNotification() {
             </Text>
           </View>
           {selectedNotification?.title == "Timetable Exchange Request" &&
-            selectedNotification?.Exchangestatus == "pending" && (
+            selectedNotification?.data?.Exchangestatus == "pending" && (
               <View style={{ gap: 20, marginTop: 20 }}>
                 <View style={{ marginHorizontal: 20 }}>
                   {/* <Text style={{ color: theme?.primaryTextColor }}>
@@ -460,7 +467,7 @@ export default function TeacherNotification() {
                 </View>
                 <View
                   style={{
-                    width: "60%",
+                    width: "90%",
                     marginHorizontal: "auto",
                     display: "flex",
                     flexDirection: "row",
@@ -468,12 +475,60 @@ export default function TeacherNotification() {
                     alignItems: "center",
                   }}
                 >
-                  <Button title="Approve" onPress={handleApproveRequest} />
-                  <Button
+                  {/* <Button title="Approve" onPress={handleApproveRequest} /> */}
+                  <TouchableOpacity
+                    style={{
+                      height: 38,
+                      width: "45%",
+                      backgroundColor: theme.primarycolor,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 5,
+                    }}
+                    onPress={() => {
+                      handleApproveRequest();
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#ffffff",
+                        fontSize: 12,
+                      }}
+                    >
+                      Approve
+                    </Text>
+                  </TouchableOpacity>
+                  {/* <Button
                     title="Reject"
                     color="red"
-                    onPress={handlerejectRequest}
-                  />
+                    onPress={() => {
+                      handlerejectRequest();
+                    }}
+                  /> */}
+                  <TouchableOpacity
+                    style={{
+                      height: 38,
+                      width: "45%",
+                      backgroundColor: "red",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 5,
+                    }}
+                    onPress={() => {
+                      handlerejectRequest();
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#ffffff",
+                        fontSize: 12,
+                      }}
+                    >
+                      Reject
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}

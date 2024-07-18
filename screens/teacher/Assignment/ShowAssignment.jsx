@@ -112,7 +112,7 @@ export default function ShowAssignment({ navigation, route }) {
       headerTitleAlign: "center", // Adjust alignment for header title (if needed)
       headerTintColor: "#000000", // Text color for back button and header title
     });
-  }, [navigation,theme]);
+  }, [navigation, theme]);
 
   // const fetchFileType = async (url) => {
   //   try {
@@ -210,59 +210,60 @@ export default function ShowAssignment({ navigation, route }) {
   };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.backgroundColor }}>
-      <View style={{ padding: 20, flex: 1 }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: theme.cardBackground,
-              borderRadius: 8,
-            }}
-          >
+      <ScrollView>
+        <View style={{ padding: 20, flex: 1 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
+                flex: 1,
+                backgroundColor: theme.cardBackground,
+                borderRadius: 8,
               }}
             >
-              <View style={{ padding: 10 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    width: "100%",
-                  }}
-                >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ padding: 10 }}>
                   <View
                     style={{
-                      borderRadius: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        color: "#007EB0",
-                        padding: 6,
-                        fontSize: 12,
-                        fontWeight: "semibold",
+                        borderRadius: 16,
                       }}
                     >
-                      Assignment Details
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={{
-                      width: 50,
-                      height: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                    onPress={() => {
-                      setDeleteAssignmentModal(true);
-                    }}
-                  >
-                    {/* <Svg
+                      <Text
+                        style={{
+                          color: "#007EB0",
+                          padding: 6,
+                          fontSize: 12,
+                          fontWeight: "semibold",
+                        }}
+                      >
+                        Assignment Details
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={{
+                        width: 50,
+                        height: 40,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => {
+                        setDeleteAssignmentModal(true);
+                      }}
+                    >
+                      {/* <Svg
                       width="24"
                       height="24"
                       viewBox="0 0 24 24"
@@ -293,256 +294,272 @@ export default function ShowAssignment({ navigation, route }) {
                         fill-opacity="0.2"
                       />
                     </Svg> */}
-                    <Feather name="trash-2" color="red" size={20} />
-                  </TouchableOpacity>
-                </View>
-                <Text
-                  style={{
-                    marginTop: 10,
-                    fontSize: 16,
-                    color: theme.primaryTextColor,
-                    fontWeight: "bold",
-                  }}
-                >
-                  {/* {params?.assignment?.question} */}
-                  {AssignmentData?.name}
-                </Text>
-                <View style={{ marginTop: 10 }}>
+                      <Feather name="trash-2" color="red" size={20} />
+                    </TouchableOpacity>
+                  </View>
                   <Text
                     style={{
                       marginTop: 10,
-                      fontSize: 12,
-                      fontWeight: "semibold",
-                      color: theme.secondaryTextColor,
+                      fontSize: 16,
+                      color: theme.primaryTextColor,
+                      fontWeight: "bold",
                     }}
                   >
-                    Due Date
+                    {/* {params?.assignment?.question} */}
+                    {AssignmentData?.name}
                   </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginTop: 8,
-                    }}
-                  >
+                  <View style={{ marginTop: 10 }}>
                     <Text
                       style={{
+                        marginTop: 10,
                         fontSize: 12,
+                        fontWeight: "semibold",
                         color: theme.secondaryTextColor,
                       }}
                     >
-                      {" "}
-                      {moment(Assignment?.submissionDate).format(
-                        "DD MMMM YYYY"
-                      )}
+                      Due Date
                     </Text>
-                  </View>
-                  <Divider style={{ marginTop: 10, marginBottom: 10 }} />
-                  <View style={{ marginBottom: 10 }}>
-                    <Text
+                    <View
                       style={{
-                        marginTop: 10,
-                        fontSize: 14,
-                        color: theme.primaryTextColor,
-                        fontWeight: "bold",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 8,
                       }}
                     >
-                      Instructions:
-                    </Text>
-                    {Assignment?.instructions.length > 0 ? (
-                      <View>
-                        {Assignment?.instructions.map((item, index) => (
-                          <Text
-                            style={{
-                              marginTop: 10,
-                              fontSize: 12,
-                              color: theme.secondaryTextColor,
-                            }}
-                            key={index}
-                          >
-                            {/* {item.description} */}
-                            {item}
-                          </Text>
-                        ))}
-                      </View>
-                    ) : (
-                      <View>
-                        <Text
-                          style={{
-                            color: theme.secondaryTextColor,
-                            textDecorationStyle: "solid",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          No Instruction Provided
-                        </Text>
-                      </View>
-                    )}
-
-                    <Text
-                      style={{
-                        marginTop: 10,
-                        fontSize: 14,
-                        color: theme.primaryTextColor,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Resources:
-                    </Text>
-                    {Assignment?.resources?.length > 0 ? (
-                      <View style={{ marginTop: 10 }}>
-                        {Assignment?.resources.map((item, index) => (
-                          <View key={index} style={{ display: "flex" }}>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: theme.secondaryTextColor,
+                        }}
+                      >
+                        {" "}
+                        {moment(Assignment?.submissionDate).format(
+                          "DD MMMM YYYY"
+                        )}
+                      </Text>
+                    </View>
+                    <Divider style={{ marginTop: 10, marginBottom: 10 }} />
+                    <View style={{ marginBottom: 10 }}>
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 14,
+                          color: theme.primaryTextColor,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Instructions:
+                      </Text>
+                      {Assignment?.instructions.length > 0 ? (
+                        <View>
+                          {Assignment?.instructions.map((item, index) => (
                             <Text
                               style={{
+                                marginTop: 10,
                                 fontSize: 12,
                                 color: theme.secondaryTextColor,
                               }}
+                              key={index}
                             >
+                              {/* {item.description} */}
                               {item}
                             </Text>
+                          ))}
+                        </View>
+                      ) : (
+                        <View>
+                          <Text
+                            style={{
+                              color: theme.secondaryTextColor,
+                              textDecorationStyle: "solid",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            No Instruction Provided
+                          </Text>
+                        </View>
+                      )}
 
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: theme.primarycolor,
-                              }}
-                            >
-                              {item.link}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <View>
-                        <Text
-                          style={{
-                            color: theme.secondaryTextColor,
-                            textDecorationStyle: "solid",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          No Resources Provided
-                        </Text>
-                      </View>
-                    )}
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          fontSize: 14,
+                          color: theme.primaryTextColor,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Resources:
+                      </Text>
+                      {Assignment?.resources?.length > 0 ? (
+                        <View style={{ marginTop: 10 }}>
+                          {Assignment?.resources.map((item, index) => (
+                            <View key={index} style={{ display: "flex" }}>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: theme.secondaryTextColor,
+                                }}
+                              >
+                                {item}
+                              </Text>
+
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: theme.primarycolor,
+                                }}
+                              >
+                                {item.link}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <View>
+                          <Text
+                            style={{
+                              color: theme.secondaryTextColor,
+                              textDecorationStyle: "solid",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            No Resources Provided
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
               </View>
             </View>
-          </View>
-          {/* <View style={{ marginTop: 10 }}>
-            <TouchableOpacity
-              style={{
-                height: 70,
-                borderWidth: 1,
-                borderStyle: "dashed",
-                borderColor: submitButtonPressed ? "red" : "#ccc",
-                borderRadius: 8,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onPress={() => {
-                pickFile();
-              }}
+
+            {/* {Assignment?.documents?.length > 0 && (
+              <View>
+                {Assignment?.documents.map((item) => {
+                  console.log(`Asignments.documents`, item);
+                  const fileType = fileTypes[item?.url];
+                  return (
+                    <View>
+                      {fileType == "image" && (
+                        <View>
+                          <Image
+                            source={{ uri: item?.url }}
+                            style={{
+                              width: "80%",
+                              height: "auto",
+                              borderRadius: 10,
+                              marginHorizontal: "auto",
+                            }}
+                          />
+                        </View>
+                      )}
+                      {fileType == "pdf" && (
+                        <View>
+                          <Text>PDF</Text>
+                        </View>
+                      )}
+                      {fileType == null && (
+                        <View>
+                          <Text>{""}</Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )} */}
+            {Assignment?.documents?.length > 0 && (
+              <View style={{ gap: 10, marginTop: 10 }}>
+                {Assignment?.documents?.map((item, index) => {
+                  return (
+                    <View
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                      key={index}
+                    >
+                      <TouchableOpacity
+                        style={{
+                          height: 46,
+                          width: "100%",
+                          backgroundColor: "#AAAAAA",
+                          borderRadius: 5,
+                          display: "flex",
+                          flexDirection: "row",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                        onPress={() => {
+                          Linking.openURL(
+                            `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
+                          );
+                        }}
+                      >
+                        <Ionicons
+                          name="document-outline"
+                          size={24}
+                          color="#FFFFFF"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#fff",
+                            fontWeight: "semibold",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {item?.label}
+                        </Text>
+                      </TouchableOpacity>
+                      {/* <Button
+                      mode={"contained"}
+                      buttonColor="#2B78CA"
+                      contentStyle={{ height: 40 }}
+                      labelStyle={{
+                        fontSize: 14,
+                        color: "#fff",
+                      }}
+                      style={{ borderRadius: 8 }}
+                    >
+                      Submit Assignment
+                    </Button> */}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+            <View
+              style={{ marginTop: 20, display: "flex", alignItems: "center" }}
             >
-              <View
+              <TouchableOpacity
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+                  height: 40,
+                  width: "100%",
+                  backgroundColor: "#2B78CA",
+                  borderRadius: 5,
+                  display: "flex",
                   justifyContent: "center",
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  navigation.navigate("EditAssignment", {
+                    Assignment,
+                  });
                 }}
               >
-                <Image
-                  source={require("../../../assets/app/upload.png")}
-                  style={{ width: 24, height: 24 }}
-                />
                 <Text
                   style={{
-                    fontSize: 12,
-                    marginLeft: 10,
-                    color: theme.secondaryTextColor,
+                    fontSize: 14,
+                    color: "#fff",
+                    fontWeight: "semibold",
                   }}
                 >
-                  FileName
-                  <Text
-                    style={{
-                      //   color: "#2B78CA",
-                      color: theme.primarycolor,
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Browse
-                  </Text>
+                  EDIT
                 </Text>
-              </View>
-            </TouchableOpacity>
-            {submitButtonPressed && (
-              <Text style={{ color: "red" }}>Upload Document first</Text>
-            )}
-          </View> */}
-
-          {Assignment?.documents?.length > 0 && (
-            <View>
-              {Assignment?.documents.map((item) => {
-                console.log(`Asignments.documents`, item);
-                const fileType = fileTypes[item?.url];
-                return (
-                  <View>
-                    {fileType == "image" && (
-                      <View>
-                        <Image
-                          source={{ uri: item?.url }}
-                          style={{
-                            width: "80%",
-                            height: "auto",
-                            borderRadius: 10,
-                            marginHorizontal: "auto",
-                          }}
-                        />
-                      </View>
-                    )}
-                    {fileType == "pdf" && (
-                      <View>
-                        <Text>PDF</Text>
-                      </View>
-                    )}
-                    {fileType == null && (
-                      <View>
-                        <Text>{""}</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          )}
-          <View
-            style={{ marginTop: 20, display: "flex", alignItems: "center" }}
-          >
-            <TouchableOpacity
-              style={{
-                height: 40,
-                width: "100%",
-                backgroundColor: "#2B78CA",
-                borderRadius: 5,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => {
-                navigation.navigate("EditAssignment", {
-                  Assignment,
-                });
-              }}
-            >
-              <Text
-                style={{ fontSize: 14, color: "#fff", fontWeight: "semibold" }}
-              >
-                EDIT
-              </Text>
-            </TouchableOpacity>
-            {/* <Button
+              </TouchableOpacity>
+              {/* <Button
             mode={"contained"}
             buttonColor="#2B78CA"
             contentStyle={{ height: 40 }}
@@ -554,78 +571,82 @@ export default function ShowAssignment({ navigation, route }) {
           >
             Submit Assignment
           </Button> */}
-          </View>
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <Modal
-              transparent={true}
-              visible={deleteAssignmentModal}
-              animationType="slide"
+            </View>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              <TouchableWithoutFeedback onPress={handleCloseModal}>
-                <View
-                  style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    width: "100%",
-                  }}
-                >
-                  <TouchableWithoutFeedback>
-                    <View
-                      style={{
-                        backgroundColor: "#fff",
-                        padding: 20,
-                        borderRadius: 10,
-                        width: "80%",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text style={{ marginBottom: 20 }}>
-                        Do you want to delete?
-                      </Text>
+              <Modal
+                transparent={true}
+                visible={deleteAssignmentModal}
+                animationType="slide"
+              >
+                <TouchableWithoutFeedback onPress={handleCloseModal}>
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      width: "100%",
+                    }}
+                  >
+                    <TouchableWithoutFeedback>
                       <View
                         style={{
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          width: "100%",
+                          backgroundColor: "#fff",
+                          padding: 20,
+                          borderRadius: 10,
+                          width: "80%",
+                          justifyContent: "center",
+                          alignItems: "center",
                         }}
                       >
-                        <TouchableOpacity
+                        <Text style={{ marginBottom: 20 }}>
+                          Do you want to delete?
+                        </Text>
+                        <View
                           style={{
-                            backgroundColor: "#ddd",
-                            padding: 10,
-                            borderRadius: 5,
-                            width: "45%",
-                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            width: "100%",
                           }}
-                          onPress={handleCloseModal}
                         >
-                          <Text>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{
-                            backgroundColor: "#ff0000",
-                            padding: 10,
-                            borderRadius: 5,
-                            width: "45%",
-                            alignItems: "center",
-                          }}
-                          onPress={handleDeleteAssignment}
-                        >
-                          <Text style={{ color: "#fff" }}>Delete</Text>
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: "#ddd",
+                              padding: 10,
+                              borderRadius: 5,
+                              width: "45%",
+                              alignItems: "center",
+                            }}
+                            onPress={handleCloseModal}
+                          >
+                            <Text>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: "#ff0000",
+                              padding: 10,
+                              borderRadius: 5,
+                              width: "45%",
+                              alignItems: "center",
+                            }}
+                            onPress={handleDeleteAssignment}
+                          >
+                            <Text style={{ color: "#fff" }}>Delete</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableWithoutFeedback>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
-          </View>
-          {/* <Modal
+                    </TouchableWithoutFeedback>
+                  </View>
+                </TouchableWithoutFeedback>
+              </Modal>
+            </View>
+            {/* <Modal
             transparent={true}
             visible={deleteAssignmentModal}
             animationType="slide"
@@ -648,8 +669,9 @@ export default function ShowAssignment({ navigation, route }) {
               </View>
             </TouchableWithoutFeedback>
           </Modal> */}
-        </ScrollView>
-      </View>
+          </ScrollView>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

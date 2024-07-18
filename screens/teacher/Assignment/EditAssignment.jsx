@@ -137,16 +137,62 @@ export default function EditAssignment({ navigation, route }) {
 
       const UploadDocumentTos3 = async () => {
         try {
+          // const uploadTasks = updatedDocs.map(async (document) => {
+          //   const fileContents = await FileSystem.readAsStringAsync(
+          //     document.uri,
+          //     {
+          //       encoding: FileSystem.EncodingType.Base64,
+          //     }
+          //   );
+
+          //   const buffer = Buffer.from(fileContents, "base64");
+
+          //   const params = {
+          //     Bucket: "edba-dev-bucket",
+          //     Key: `Assignments/${document.name}`,
+          //     Body: buffer,
+          //     ContentType: document.mimeType,
+          //   };
+
+          //   const uploadedDocument = await s3.upload(params).promise();
+
+          //   console.log(
+          //     "Document uploaded successfully:",
+          //     uploadedDocument.Key
+          //   );
+
+          //   return {
+          //     key: uploadedDocument.Key,
+          //     url: uploadedDocument.Location,
+          //     label: document.name,
+          //   };
+          // });
           const uploadTasks = updatedDocs.map(async (document) => {
-            const fileContents = await FileSystem.readAsStringAsync(
-              document.uri,
-              {
-                encoding: FileSystem.EncodingType.Base64,
+            let fileContents;
+            let tempUri = document?.uri;
+
+            if (document?.uri.startsWith("content://")) {
+              // Handle content URI
+              const fileInfo = await FileSystem.getInfoAsync(document.uri);
+              if (!fileInfo.exists) {
+                throw new Error(`File does not exist: ${document.uri}`);
               }
-            );
+
+              // Copy content URI to a temporary file
+              const tempFileUri = FileSystem.documentDirectory + document.name;
+              await FileSystem.copyAsync({
+                from: document.uri,
+                to: tempFileUri,
+              });
+              tempUri = tempFileUri;
+            }
+
+            // Read the file from either the original URI or the temporary URI
+            fileContents = await FileSystem.readAsStringAsync(tempUri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
 
             const buffer = Buffer.from(fileContents, "base64");
-
             const params = {
               Bucket: "edba-dev-bucket",
               Key: `Assignments/${document.name}`,
@@ -820,7 +866,9 @@ export default function EditAssignment({ navigation, route }) {
               }}
               onPress={handleSubmit(onSubmit)}
             >
-              <Text style={{ color: "#FFFFFF" }}>UPDATE</Text>
+              <Text style={{ color: "#FFFFFF" }}>
+                {isLoading ? <ActivityIndicator size={"large"} /> : "UPDATE"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

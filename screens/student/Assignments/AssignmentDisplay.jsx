@@ -10,6 +10,7 @@ import {
   FlatList,
   Alert,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { Svg, Circle, Text as SvgText, Path } from "react-native-svg";
 import { useTheme, Avatar, Divider, Button } from "react-native-paper";
@@ -660,7 +661,9 @@ export default function AssignmentDisplay({ navigation, route }) {
                     color: theme.secondaryTextColor,
                   }}
                 >
-                  {fileName == null ? "You can upload pdf or " : `${fileName} `}
+                  {fileName == null
+                    ? "SUBMIT YOUR ASSIGNMENT "
+                    : `${fileName} `}
                   <Text
                     style={{
                       //   color: "#2B78CA",
@@ -691,13 +694,16 @@ export default function AssignmentDisplay({ navigation, route }) {
                 alignItems: "center",
               }}
               onPress={() => {
+                if (isLoading) {
+                  return;
+                }
                 handleSubmitAssignment();
               }}
             >
               <Text
                 style={{ fontSize: 14, color: "#fff", fontWeight: "semibold" }}
               >
-                SUBMIT ASSIGNMENT
+                {isLoading ? <ActivityIndicator /> : "SUBMIT ASSIGNMENT"}
               </Text>
             </TouchableOpacity>
             {/* <Button

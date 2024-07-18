@@ -614,81 +614,85 @@ export default function AddAssignment() {
             This field is required
           </Text>
         )}
-        <Text
-          style={{
-            paddingTop: 10,
-            marginBottom: 5,
-            fontSize: 14,
-            fontWeight: "600",
-            color: theme.primaryTextColor,
-          }}
-        >
-          Select Subject
-        </Text>
-        <Controller
-          style={{ borderWidth: 2, borderColor: "black" }}
-          control={control}
-          rules={{ required: true }}
-          render={({ field: { onChange, value } }) => (
-            <RNPickerSelect
-              onValueChange={onChange}
-              items={subjectList}
-              placeholder={{ label: "Select Subject", value: "" }}
+        {subjectList?.length > 0 && (
+          <>
+            <Text
               style={{
-                inputIOS: [
-                  {
-                    borderWidth: 1,
-                    height: 36,
-                    borderColor: "#ccc",
-                    padding: 10,
-                    borderRadius: 5,
-                    marginBottom: 10,
-                  },
-                  errors.subject && {
-                    borderColor: "red",
-                  },
-                ],
-                inputAndroid: [
-                  {
-                    borderWidth: 1,
-                    height: 36,
-                    borderColor: "#ccc",
-                    padding: 10,
-                    borderRadius: 5,
-                    marginBottom: 10,
-                  },
-                  errors.subject && {
-                    borderColor: "red",
-                  },
-                ],
-                iconContainer: {
-                  top: 10,
-                  right: 14,
-                },
+                paddingTop: 10,
+                marginBottom: 5,
+                fontSize: 14,
+                fontWeight: "600",
+                color: theme.primaryTextColor,
               }}
-              Icon={() => (
-                <AntDesign
-                  name="caretdown"
-                  size={12}
-                  color={`${theme.secondaryTextColor}80`}
+            >
+              Select Subject
+            </Text>
+            <Controller
+              style={{ borderWidth: 2, borderColor: "black" }}
+              control={control}
+              rules={{ required: true }}
+              render={({ field: { onChange, value } }) => (
+                <RNPickerSelect
+                  onValueChange={onChange}
+                  items={subjectList}
+                  placeholder={{ label: "Select Subject", value: "" }}
+                  style={{
+                    inputIOS: [
+                      {
+                        borderWidth: 1,
+                        height: 36,
+                        borderColor: "#ccc",
+                        padding: 10,
+                        borderRadius: 5,
+                        marginBottom: 10,
+                      },
+                      errors.subject && {
+                        borderColor: "red",
+                      },
+                    ],
+                    inputAndroid: [
+                      {
+                        borderWidth: 1,
+                        height: 36,
+                        borderColor: "#ccc",
+                        padding: 10,
+                        borderRadius: 5,
+                        marginBottom: 10,
+                      },
+                      errors.subject && {
+                        borderColor: "red",
+                      },
+                    ],
+                    iconContainer: {
+                      top: 10,
+                      right: 14,
+                    },
+                  }}
+                  Icon={() => (
+                    <AntDesign
+                      name="caretdown"
+                      size={12}
+                      color={`${theme.secondaryTextColor}80`}
+                    />
+                  )}
+                  value={value}
+                  useNativeAndroidPickerStyle={false}
                 />
               )}
-              value={value}
-              useNativeAndroidPickerStyle={false}
+              name="subject"
+              defaultValue=""
             />
-          )}
-          name="subject"
-          defaultValue=""
-        />
-        {errors.subject && (
-          <Text
-            style={{
-              color: "red",
-              marginBottom: 10,
-            }}
-          >
-            This field is required
-          </Text>
+            {errors.subject && (
+              <Text
+                style={{
+                  color: "red",
+                  marginBottom: 10,
+                }}
+              >
+                This field is required
+              </Text>
+            )}
+          </>
         )}
 
         <Text

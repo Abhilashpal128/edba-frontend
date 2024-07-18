@@ -52,12 +52,13 @@ export default function ClassExchange({
   const [date, setDate] = useState(classDate);
   const [Lecturesdata, setLectureData] = useState([]);
   const [TeacherList, setTeacherList] = useState(TeacherListData);
-  const [selectedTeacher, setSelectedTeacher] = useState();
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [selectedclassforExchange, setSelectedClassForExchange] = useState();
   const [isClassSelected, setIsClassSelected] = useState(false);
   const [requestStatus, setRequestStatus] = useState(null);
   const [exchangeRequestId, setExchangeRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectTeacherError, setSekectTeacherError] = useState(false);
   const [selectedNotificationForTeacher, setSelectedNotificationForTeacher] =
     useState("");
   const navigation = useNavigation();
@@ -71,9 +72,38 @@ export default function ClassExchange({
     setIsDatePickerVisible(false);
   };
 
-  const handleStartDateConfirm = (date) => {
+  const handleStartDateConfirm = async (date) => {
     setDate(moment(date).format("YYYY-MM-DD"));
+
     setIsDatePickerVisible(false);
+
+    if (selectedTeacher == null) {
+      setSekectTeacherError(true);
+      return true;
+    }
+
+    const selectedDate = moment(date).format("YYYY-MM-DD");
+    try {
+      setIsLoading(true);
+      console.log(`value`, selectedTeacher);
+      // setSelectedTeacher(value);
+      const response = await post("timetable/search", {
+        teacherId: selectedTeacher,
+        date: selectedDate,
+      });
+      // console.log(`classExchange response`, response);
+      if (response?.errCode == -1) {
+        setIsLoading(false);
+        console.log(`classExchange response`, response);
+        setLectureData(response?.data);
+      } else {
+        Alert.alert(response?.errMsg);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    }
   };
 
   console.log(`classDetaildatatatat`, classDetail);
@@ -375,6 +405,7 @@ export default function ClassExchange({
           <View style={{ marginVertical: 10 }}>
             <RNPickerSelect
               onValueChange={(value) => {
+                setSekectTeacherError(false);
                 hendleSelectTeacher(value);
               }}
               items={TeacherList}
@@ -415,6 +446,9 @@ export default function ClassExchange({
               value={selectedTeacher} // Make sure selectedTeacher matches one of the value in items
               useNativeAndroidPickerStyle={false}
             />
+            {selectTeacherError == true && (
+              <Text style={{ color: "red" }}>Select Teacher first </Text>
+            )}
           </View>
           {/* <RNPickerSelect
       onValueChange={(value) => {

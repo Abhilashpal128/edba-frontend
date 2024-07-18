@@ -150,7 +150,12 @@ export default function Profile() {
               </View>
             ) : (
               <View>
-                <Avatar.Text label="AB" />
+                <Avatar.Text
+                  label={`${user?.firstName?.slice(
+                    0,
+                    1
+                  )}${user?.lastName?.slice(0, 1)}`}
+                />
               </View>
             )}
           </View>

@@ -365,8 +365,10 @@ export default function Grade({ navigation, route }) {
     setSelectedStatus(value);
     if (value == "Completed") {
       setStudentList(allStudents?.completedStudents);
-    } else {
+    } else if (value == "Pending") {
       setStudentList(allStudents?.pendingStudents);
+    } else {
+      setStudentList(allStudents?.allStudents);
     }
   };
 
@@ -467,7 +469,7 @@ export default function Grade({ navigation, route }) {
                 handleStatusChange(value);
               }}
               items={assignmentStatus}
-              placeholder={{ label: "status", value: "" }}
+              placeholder={{ label: "All Students", value: "allStudents" }}
               style={{
                 inputIOS: [
                   {
