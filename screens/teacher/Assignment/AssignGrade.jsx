@@ -62,6 +62,11 @@ export default function AssignGrade({
   };
 
   const fetchStudentAssignment = async () => {
+    console.log(`assignmentId`, assignmentId);
+    console.log(
+      `selectedStudentassignGrade?.id`,
+      selectedStudentassignGrade?.id
+    );
     try {
       const response = await post("assignments/assign-grade", {
         assignmentId: assignmentId,
@@ -194,6 +199,7 @@ export default function AssignGrade({
                       justifyContent: "center",
                       alignItems: "flex-start",
                     }}
+                    key={index}
                   >
                     <TouchableOpacity
                       style={{

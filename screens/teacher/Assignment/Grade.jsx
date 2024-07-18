@@ -450,7 +450,7 @@ export default function Grade({ navigation, route }) {
                   color: theme.primaryTextColor,
                 }}
               >
-                {assignmentdata?.class?.name}
+                {assignmentdata?.class?.name}-{assignmentdata?.division?.name}
               </Text>
             </View>
           </View>

@@ -1108,6 +1108,16 @@ export default function TeacherTimeTable({ navigation, route }) {
                                     <>
                                       <Text
                                         style={{
+                                          color: theme.primaryTextColor,
+                                          fontSize:
+                                            activeWeek === "Today" ? 16 : 12,
+                                          fontFamily: "Poppins_600SemiBold",
+                                        }}
+                                      >
+                                        {classData?.subject?.name}
+                                      </Text>
+                                      <Text
+                                        style={{
                                           color:
                                             activeWeek === "Today"
                                               ? theme.primaryTextColor
@@ -1116,8 +1126,8 @@ export default function TeacherTimeTable({ navigation, route }) {
                                             activeWeek === "Today" ? 16 : 12,
                                         }}
                                       >
-                                        Class:{" "}
-                                        {JSON.stringify(classData?.class?.name)}
+                                        Class: {classData?.class?.name} -
+                                        {classData?.division?.name}
                                       </Text>
                                       <Text
                                         style={{

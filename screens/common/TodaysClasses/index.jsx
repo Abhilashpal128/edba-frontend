@@ -84,7 +84,7 @@ export default function TodaysClasses({ TodaysClassesData }) {
                         color: theme.primaryTextColor,
                       }}
                     >
-                      Class: {item?.class?.name}
+                      Class: {item?.class?.name}-{item?.division?.name}
                     </Text>
                     <Text
                       style={{

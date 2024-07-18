@@ -326,21 +326,46 @@ export default function ClassExchange({
           <View
             style={{
               display: "flex",
-              flexDirection: "row",
             }}
           >
-            <Text
+            <View
               style={{
-                fontSize: 14,
-                color: theme.primaryTextColor,
-                fontWeight: "500",
+                display: "flex",
+                flexDirection: "row",
               }}
             >
-              Class:
-            </Text>
-            <Text style={{ color: theme.secondaryTextColor }}>
-              {classDetail?.class?.name}
-            </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: theme.primaryTextColor,
+                  fontWeight: "500",
+                }}
+              >
+                Class:
+              </Text>
+              <Text style={{ color: theme.secondaryTextColor }}>
+                {classDetail?.class?.name} - {classDetail?.division?.name}
+              </Text>
+            </View>
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: theme.primaryTextColor,
+                  fontWeight: "500",
+                }}
+              >
+                Subject:
+              </Text>
+              <Text style={{ color: theme.secondaryTextColor }}>
+                {classDetail?.subject?.name}
+              </Text>
+            </View>
           </View>
           <View
             style={{
@@ -363,7 +388,7 @@ export default function ClassExchange({
           </View>
         </View>
       </View>
-      <View style={{ marginHorizontal: 20 }}>
+      <View style={{ marginHorizontal: 20, marginTop: 10 }}>
         <View
           style={{
             display: "flex",
@@ -618,9 +643,16 @@ export default function ClassExchange({
                             <View
                               style={{ display: "flex", flexDirection: "row" }}
                             >
+                              <Text style={{ fontSize: 12 }}>
+                                {item?.subject?.name}
+                              </Text>
+                            </View>
+                            <View
+                              style={{ display: "flex", flexDirection: "row" }}
+                            >
                               <Text style={{ fontSize: 12 }}>Class:</Text>
                               <Text style={{ fontSize: 12 }}>
-                                {item?.class?.name}
+                                {item?.class?.name} - {item?.division?.name}
                               </Text>
                             </View>
                             <View

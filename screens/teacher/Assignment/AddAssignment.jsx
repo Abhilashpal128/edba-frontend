@@ -54,6 +54,7 @@ export default function AddAssignment() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const [classes, setClasses] = useState([]);
+  const [divisionList, setDivisionList] = useState([]);
   const [subjectList, setSubjectList] = useState([]);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const TodaysDate = new Date();
@@ -488,11 +489,11 @@ export default function AddAssignment() {
   //   }
   // };
 
-  const handleClassChange = async (value) => {
+  fetchSubjectBasedonclass = async (classId) => {
     try {
       const response = await post("classes/subject", {
         teacherId: TeacherId,
-        classId: value,
+        classId: classId,
       });
       if (response?.errCode == -1) {
         setSubjectList(
@@ -504,7 +505,34 @@ export default function AddAssignment() {
       } else {
         setSubjectList([]);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchDivisionBasedonclas = async (classId) => {
+    try {
+      const response = await post("division/getClass", {
+        classId: classId,
+      });
+      if (response?.errCode == -1) {
+        setDivisionList(
+          response?.data.map((item) => ({
+            label: item?.name,
+            value: item?.id,
+          }))
+        );
+      } else {
+        setDivisionList([]);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleClassChange = async (value) => {
+    fetchSubjectBasedonclass(value);
+    fetchDivisionBasedonclas(value);
   };
 
   if (isLoading) {
@@ -613,6 +641,86 @@ export default function AddAssignment() {
           >
             This field is required
           </Text>
+        )}
+        {divisionList?.length > 0 && (
+          <>
+            <Text
+              style={{
+                paddingTop: 10,
+                marginBottom: 5,
+                fontSize: 14,
+                fontWeight: "600",
+                color: theme.primaryTextColor,
+              }}
+            >
+              Select Division
+            </Text>
+            <Controller
+              style={{ borderWidth: 2, borderColor: "black" }}
+              control={control}
+              rules={{ required: true }}
+              render={({ field: { onChange, value } }) => (
+                <RNPickerSelect
+                  onValueChange={onChange}
+                  items={divisionList}
+                  placeholder={{ label: "Select Division", value: "" }}
+                  style={{
+                    inputIOS: [
+                      {
+                        borderWidth: 1,
+                        height: 36,
+                        borderColor: "#ccc",
+                        padding: 10,
+                        borderRadius: 5,
+                        marginBottom: 10,
+                      },
+                      errors.subject && {
+                        borderColor: "red",
+                      },
+                    ],
+                    inputAndroid: [
+                      {
+                        borderWidth: 1,
+                        height: 36,
+                        borderColor: "#ccc",
+                        padding: 10,
+                        borderRadius: 5,
+                        marginBottom: 10,
+                      },
+                      errors.subject && {
+                        borderColor: "red",
+                      },
+                    ],
+                    iconContainer: {
+                      top: 10,
+                      right: 14,
+                    },
+                  }}
+                  Icon={() => (
+                    <AntDesign
+                      name="caretdown"
+                      size={12}
+                      color={`${theme.secondaryTextColor}80`}
+                    />
+                  )}
+                  value={value}
+                  useNativeAndroidPickerStyle={false}
+                />
+              )}
+              name="divisions"
+              defaultValue=""
+            />
+            {errors.divisions && (
+              <Text
+                style={{
+                  color: "red",
+                  marginBottom: 10,
+                }}
+              >
+                This field is required
+              </Text>
+            )}
+          </>
         )}
         {subjectList?.length > 0 && (
           <>

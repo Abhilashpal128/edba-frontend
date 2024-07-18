@@ -130,7 +130,7 @@ export default function DrawerRoutingcontent() {
       setSubScreenOpend((prev) => !prev);
     } else {
       // setActiveTab(item.screen);
-      dispatch(setActiveTab(item.screen));
+      // dispatch(setActiveTab(item.screen));
       navigation.navigate(item?.screen);
     }
   };

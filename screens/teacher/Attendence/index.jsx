@@ -70,6 +70,7 @@ export default function TeacherAttendence() {
   const { theme } = useThemeContext();
   const [studentAttendenceData, setStudentAttendenceData] = useState(data);
   const [selectedClass, setSelectedClass] = useState(null);
+
   const [classes, setClasses] = useState([]);
   const today = moment();
   const [selectedDate, setSelectedDate] = useState(today);
@@ -87,8 +88,12 @@ export default function TeacherAttendence() {
   const [lectureSlots, setLectureSlots] = useState([]);
   const [slot, setSlot] = useState(null);
   const [subjectList, setSubjectList] = useState([]);
+  const [divisionList, setDivisionList] = useState([]);
+  const [selectedDivision, setSelectedDivision] = useState(null);
+  const [divisionError, setDivisionError] = useState(false);
   const [attendenceType, setAttendenceType] = useState("Full Day");
   const isFocused = useIsFocused();
+
   const user = useSelector((state) => state.login.user);
   console.log(`user User`, user);
   const TeacherId = user?.teacherId;
@@ -101,7 +106,10 @@ export default function TeacherAttendence() {
   };
 
   const onRefresh = useCallback(() => {
-    handleClassSelect(selectedClass?.value);
+    // handleClassSelect(selectedClass?.value);
+    // setDivisionList([]);
+    // setClasses([]);
+    // getClassList();
   }, []);
 
   // const onRefresh = () => {
@@ -192,43 +200,37 @@ export default function TeacherAttendence() {
     } catch (error) {}
   };
 
-  const handleClassSelect = async (value) => {
-    setRefreshing(true);
-    console.log(`value`, value);
-    fetchTeacherSubjects(value);
+  const fetchDivisionBasedonclas = async (classId) => {
+    console.log(`classsssIddddd`, classId);
     try {
-      setClassError(false);
-      const date = moment(selectedDate).format("YYYY-MM-DD");
-      const selectedClassData = classes.find((cls) => cls?.value == value);
-      setSelectedClass(selectedClassData);
-      console.log(`selectedClassData`, selectedClassData);
-      setIsLoading(true);
-      const response = await post("attendences/get", {
-        classId: value,
-        date: date,
-        teacherId: TeacherId,
+      const response = await post("division/getClass", {
+        classId: classId,
       });
-      console.log(`attendence StudentList `, response);
-      if (response.errCode == -1) {
-        setStudentList(response?.data);
-        // Alert.alert("Attendence Marked Successfully");
-        const absentStudents = response?.data
-          ?.filter((item) => item?.status == "Absent")
-          .map((data) => data?.id);
-        console.log(`absentStudents`, absentStudents);
-        setAbsentList(absentStudents);
-        setIsLoading(false);
+      const divisionLisiit = response?.data.map((item) => ({
+        label: item?.name,
+        value: item?.id,
+      }));
+      console.log(`divisionLisiit`, divisionLisiit);
+      if (response?.errCode == -1) {
+        setDivisionList(
+          response?.data.map((item) => ({
+            label: item?.name,
+            value: item?.id,
+          }))
+        );
       } else {
-        console.log(response?.errMsg);
-        setIsLoading(false);
+        setDivisionList([]);
       }
     } catch (error) {
       console.log(error);
-      setIsLoading(false);
-      setRefreshing(false);
-    } finally {
-      setRefreshing(false);
     }
+  };
+
+  const handleClassSelect = async (value) => {
+    console.log(`value`, value);
+    setSelectedClass(value);
+    fetchDivisionBasedonclas(value);
+    fetchTeacherSubjects(value);
   };
 
   useLayoutEffect(() => {
@@ -433,9 +435,9 @@ export default function TeacherAttendence() {
     console.log(`hii`);
     const newDate = selectedDate.clone().add(days, "days");
     const date = moment(newDate).format("YYYY-MM-DD");
-    if (selectedClass != null) {
+    if (selectedDivision != null) {
       const response = await post("attendences/get", {
-        classId: selectedClass?.value,
+        division: selectedDivision?.value,
         date: date,
         teacherId: TeacherId,
       });
@@ -452,25 +454,71 @@ export default function TeacherAttendence() {
         setStudentList([]);
       }
     }
-
     setSelectedDate(newDate);
+  };
+
+  const handleSelectDivision = async (value) => {
+    try {
+      setClassError(false);
+      setDivisionError(false);
+      setSelectedDivision(value);
+      const date = moment(selectedDate).format("YYYY-MM-DD");
+      const selectedDivisionData = divisionList.find(
+        (cls) => cls?.value == value
+      );
+      // setSelectedDivision(selectedDivisionData);
+      // console.log(
+      //   `selectedClassData selectedClassData selectedClassData selectedClassData`,
+      //   selectedDivisionData
+      // );
+      setIsLoading(true);
+      const response = await post("attendences/get", {
+        division: value,
+        date: date,
+        teacherId: TeacherId,
+      });
+      console.log(`attendence StudentList `, response);
+      if (response.errCode == -1) {
+        setStudentList(response?.data);
+        // Alert.alert("Attendence Marked Successfully");
+        const absentStudents = response?.data
+          ?.filter((item) => item?.status == "Absent")
+          .map((data) => data?.id);
+        console.log(`absentStudents`, absentStudents);
+        setAbsentList(absentStudents);
+        setIsLoading(false);
+      } else {
+        console.log(response?.errMsg);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handlesubmitAssignment = async () => {
     try {
       if (selectedClass == null) {
         setClassError(true);
-        return true;
+        return null;
+      }
+      if (selectedDivision == null) {
+        setDivisionError(true);
+        return null;
       }
 
       if (attendenceType == "Lecture" && slot == null) {
         setSlotError(true);
-        return true;
+        return null;
       }
 
       if (attendenceType == "Subject" && selectedSubject == null) {
         setSubjectError(true);
-        return true;
+        return null;
       }
 
       const classId = selectedClass?.value;
@@ -625,7 +673,9 @@ export default function TeacherAttendence() {
               }}
             >
               <RNPickerSelect
-                onValueChange={handleClassSelect}
+                onValueChange={(value) => {
+                  handleClassSelect(value);
+                }}
                 items={classes}
                 value={selectedClass != null ? selectedClass?.value : ""}
                 style={{
@@ -650,12 +700,66 @@ export default function TeacherAttendence() {
                     paddingRight: 30, // to ensure the text is never behind the icon
                   },
                 }}
-                placeholder={{}}
+                placeholder={{ label: "hello", value: "" }}
                 color={theme.primaryTextColor}
               />
             </View>
             {classError && (
               <Text style={{ color: "red" }}>select Class first</Text>
+            )}
+          </View>
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "500",
+                color: theme.primaryTextColor,
+              }}
+            >
+              Select Division
+            </Text>
+            <View
+              style={{
+                marginBottom: 20,
+                borderWidth: 1,
+                borderColor: "gray",
+                borderRadius: 4,
+                height: 36,
+                justifyContent: "center",
+              }}
+            >
+              <RNPickerSelect
+                onValueChange={handleSelectDivision}
+                items={divisionList}
+                value={selectedDivision != null ? selectedDivision?.value : ""}
+                style={{
+                  inputIOS: {
+                    fontSize: 16,
+                    paddingVertical: 12,
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: "gray",
+                    borderRadius: 4,
+                    color: theme.primaryTextColor,
+                    paddingRight: 30, // to ensure the text is never behind the icon
+                  },
+                  inputAndroid: {
+                    fontSize: 16,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    borderWidth: 0.5,
+                    borderColor: "purple",
+                    borderRadius: 8,
+                    color: theme.primaryTextColor,
+                    paddingRight: 30, // to ensure the text is never behind the icon
+                  },
+                }}
+                placeholder={{ label: "select Division", value: null }}
+                color={theme.primaryTextColor}
+              />
+            </View>
+            {divisionError && (
+              <Text style={{ color: "red" }}>select Division first</Text>
             )}
           </View>
 

@@ -281,7 +281,8 @@ export default function TeacherAssignment({ navigation }) {
               color: theme.primaryTextColor,
             }}
           >
-            {item?.class?.name}
+            {item?.class?.name}-
+            {item?.division?.name}
           </Text>
           <View
             style={{
@@ -693,7 +694,7 @@ export default function TeacherAssignment({ navigation }) {
             }}
             items={subjectList}
             placeholder={{ label: "All Assignments", value: "All" }}
-            style={{  
+            style={{
               inputIOS: [
                 {
                   borderWidth: 1,
@@ -751,8 +752,8 @@ export default function TeacherAssignment({ navigation }) {
               }
             /> */}
             <ScrollView style={{ marginBottom: 50 }}>
-              {assignments.map((assignment) => (
-                <View key={assignment.subject}>
+              {assignments?.map((assignment) => (
+                <View key={assignment?.subject}>
                   <View style={{ paddingLeft: 10 }}>
                     <Text
                       style={{
@@ -762,10 +763,10 @@ export default function TeacherAssignment({ navigation }) {
                         color: theme.primaryTextColor,
                       }}
                     >
-                      {assignment.subject}
+                      {assignment?.subject}
                     </Text>
                   </View>
-                  {assignment.details.map((item) => renderItem(item))}
+                  {assignment?.details?.map((item) => renderItem(item))}
                 </View>
               ))}
             </ScrollView>
