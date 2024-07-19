@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   View,
   TouchableWithoutFeedback,
-  PermissionsAndroid,
-  PushNotificationIOS,
   Platform,
   Linking,
 } from "react-native";
