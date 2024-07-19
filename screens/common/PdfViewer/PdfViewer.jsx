@@ -1,7 +1,6 @@
 import React from "react";
 import { Dimensions, Text, TouchableOpacity } from "react-native";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
-// import Pdf from "react-native-pdf";
 import { WebView } from "react-native-webview";
 import { AntDesign } from "react-native-vector-icons";
 // import PdfReader from "rn-pdf-reader-js";

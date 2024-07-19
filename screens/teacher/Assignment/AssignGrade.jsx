@@ -16,9 +16,7 @@ import { MaterialCommunityIcons } from "react-native-vector-icons";
 import PdfViewer from "../../common/PdfViewer/PdfViewer";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { post } from "../../../utils/apis/TeacherApis/login";
-// import Pdf from "react-native-pdf";
 // import { theme } from "../../../theming";
-// import { PDFView } from "react-native-view-pdf";
 
 export default function AssignGrade({
   selectedStudentassignGrade,

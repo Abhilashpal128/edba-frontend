@@ -166,7 +166,7 @@ export default function TeacherAssignment({ navigation }) {
 
   const getAssignmentonSubject = async () => {};
 
-  const handleStatusChange = async (value) => {
+  const handleStatusChange = async (value) => { 
     console.log(`ALLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLll`, value);
     if (value == "All") {
       fetchassignmentData();
