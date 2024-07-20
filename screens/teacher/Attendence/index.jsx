@@ -287,9 +287,84 @@ export default function TeacherAttendence() {
     });
   }, [navigation, theme]);
 
-  const handleSlotSelect = (value) => {
+  const handleSelectDivision = async (value) => {
+    try {
+      setClassError(false);
+      setDivisionError(false);
+      setSelectedDivision(value);
+      const date = moment(selectedDate).format("YYYY-MM-DD");
+      const selectedDivisionData = divisionList.find(
+        (cls) => cls?.value == value
+      );
+      setSelectedDivision(selectedDivisionData);
+      console.log(
+        `selectedClassData selectedClassData selectedClassData selectedClassData`,
+        selectedDivisionData
+      );
+      setIsLoading(true);
+      const response = await post("attendences/get", {
+        division: value,
+        date: date,
+        teacherId: TeacherId,
+        slot: attendenceType,
+      });
+      console.log(`attendence StudentList `, response);
+      if (response.errCode == -1) {
+        setStudentList(response?.data);
+        // Alert.alert("Attendence Marked Successfully");
+        const absentStudents = response?.data
+          ?.filter((item) => item?.status == "Absent")
+          .map((data) => data?.id);
+        console.log(`absentStudents`, absentStudents);
+        setAbsentList(absentStudents);
+        setIsLoading(false);
+      } else {
+        setStudentList([]);
+        console.log(response?.errMsg);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleSlotSelect = async (value) => {
     setSlotError(false);
     setSlot(value);
+    try {
+      const date = moment(selectedDate).format("YYYY-MM-DD");
+      setIsLoading(true);
+      const response = await post("attendences/get", {
+        division: selectedDivision?.value,
+        date: date,
+        teacherId: TeacherId,
+        slot: attendenceType,
+        slotValue: value,
+      });
+      console.log(`attendence StudentList `, response);
+      if (response.errCode == -1) {
+        setStudentList(response?.data);
+        // Alert.alert("Attendence Marked Successfully");
+        const absentStudents = response?.data
+          ?.filter((item) => item?.status == "Absent")
+          .map((data) => data?.id);
+        console.log(`absentStudents`, absentStudents);
+        setAbsentList(absentStudents);
+        setIsLoading(false);
+      } else {
+        setStudentList([]);
+        console.log(response?.errMsg);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    }
   };
 
   const renderItem = ({ item }) => (
@@ -458,49 +533,6 @@ export default function TeacherAttendence() {
     setSelectedDate(newDate);
   };
 
-  const handleSelectDivision = async (value) => {
-    try {
-      setClassError(false);
-      setDivisionError(false);
-      setSelectedDivision(value);
-      const date = moment(selectedDate).format("YYYY-MM-DD");
-      const selectedDivisionData = divisionList.find(
-        (cls) => cls?.value == value
-      );
-      // setSelectedDivision(selectedDivisionData);
-      // console.log(
-      //   `selectedClassData selectedClassData selectedClassData selectedClassData`,
-      //   selectedDivisionData
-      // );
-      setIsLoading(true);
-      const response = await post("attendences/get", {
-        division: value,
-        date: date,
-        teacherId: TeacherId,
-      });
-      console.log(`attendence StudentList `, response);
-      if (response.errCode == -1) {
-        setStudentList(response?.data);
-        // Alert.alert("Attendence Marked Successfully");
-        const absentStudents = response?.data
-          ?.filter((item) => item?.status == "Absent")
-          .map((data) => data?.id);
-        console.log(`absentStudents`, absentStudents);
-        setAbsentList(absentStudents);
-        setIsLoading(false);
-      } else {
-        console.log(response?.errMsg);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.log(error);
-      setIsLoading(false);
-      setRefreshing(false);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const handlesubmitAssignment = async () => {
     try {
       if (selectedClass == null) {
@@ -538,7 +570,7 @@ export default function TeacherAttendence() {
         slotValue: slot,
         subjectId: selectedSubject,
         settingId: SettingId ? SettingId : null,
-        division: selectedDivision ? selectedDivision : null,
+        division: selectedDivision ? selectedDivision?.value : null,
       };
       const response = await post("attendences/mark", postData);
       console.log(`AttendenceResponse`, response?.data);
@@ -635,10 +667,40 @@ export default function TeacherAttendence() {
     fetchAttendenceSettings();
   }, [isFocused]);
 
-  const handlesubjectSelect = (value) => {
+  const handlesubjectSelect = async (value) => {
     console.log(`setSelectedSubject`, value);
     setSelectedSubject(value);
     setSubjectError(false);
+    try {
+      const date = moment(selectedDate).format("YYYY-MM-DD");
+      setIsLoading(true);
+      const response = await post("attendences/get", {
+        division: selectedDivision?.value,
+        date: date,
+        teacherId: TeacherId,
+        slot: attendenceType,
+        subjectId: value,
+      });
+      console.log(`attendence StudentList `, response);
+      if (response.errCode == -1) {
+        setStudentList(response?.data);
+        // Alert.alert("Attendence Marked Successfully");
+        const absentStudents = response?.data
+          ?.filter((item) => item?.status == "Absent")
+          .map((data) => data?.id);
+        console.log(`absentStudents`, absentStudents);
+        setAbsentList(absentStudents);
+        setIsLoading(false);
+      } else {
+        setStudentList([]);
+        console.log(response?.errMsg);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -683,14 +745,16 @@ export default function TeacherAttendence() {
                 value={selectedClass != null ? selectedClass?.value : ""}
                 style={{
                   inputIOS: {
-                    fontSize: 16,
-                    paddingVertical: 12,
-                    paddingHorizontal: 10,
                     borderWidth: 1,
-                    borderColor: "gray",
-                    borderRadius: 4,
-                    color: theme.primaryTextColor,
-                    paddingRight: 30, // to ensure the text is never behind the icon
+                    borderColor: "#ccc",
+                    borderRadius: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 12,
+                    height: 36,
+                    marginBottom: 10,
+                    backgroundColor: "white",
+                    fontSize: 16,
+                    color: "#000",
                   },
                   inputAndroid: {
                     fontSize: 16,
@@ -741,14 +805,16 @@ export default function TeacherAttendence() {
                 value={selectedDivision != null ? selectedDivision?.value : ""}
                 style={{
                   inputIOS: {
-                    fontSize: 16,
-                    paddingVertical: 12,
-                    paddingHorizontal: 10,
                     borderWidth: 1,
-                    borderColor: "gray",
-                    borderRadius: 4,
-                    color: theme.primaryTextColor,
-                    paddingRight: 30, // to ensure the text is never behind the icon
+                    borderColor: "#ccc",
+                    borderRadius: 5,
+                    paddingHorizontal: 10,
+                    paddingVertical: 12,
+                    height: 36,
+                    marginBottom: 10,
+                    backgroundColor: "white",
+                    fontSize: 16,
+                    color: "#000",
                   },
                   inputAndroid: {
                     fontSize: 16,
@@ -804,14 +870,16 @@ export default function TeacherAttendence() {
                     value={slot}
                     style={{
                       inputIOS: {
-                        fontSize: 16,
-                        paddingVertical: 12,
-                        paddingHorizontal: 10,
                         borderWidth: 1,
-                        borderColor: "gray",
-                        borderRadius: 4,
-                        color: theme.primaryTextColor,
-                        paddingRight: 30, // to ensure the text is never behind the icon
+                        borderColor: "#ccc",
+                        borderRadius: 5,
+                        paddingHorizontal: 10,
+                        paddingVertical: 12,
+                        height: 36,
+                        marginBottom: 10,
+                        backgroundColor: "white",
+                        fontSize: 16,
+                        color: "#000",
                       },
                       inputAndroid: {
                         fontSize: 16,
@@ -863,14 +931,16 @@ export default function TeacherAttendence() {
                     value={selectedSubject}
                     style={{
                       inputIOS: {
-                        fontSize: 16,
-                        paddingVertical: 12,
-                        paddingHorizontal: 10,
                         borderWidth: 1,
-                        borderColor: "gray",
-                        borderRadius: 4,
-                        color: theme.primaryTextColor,
-                        paddingRight: 30, // to ensure the text is never behind the icon
+                        borderColor: "#ccc",
+                        borderRadius: 5,
+                        paddingHorizontal: 10,
+                        paddingVertical: 12,
+                        height: 36,
+                        marginBottom: 10,
+                        backgroundColor: "white",
+                        fontSize: 16,
+                        color: "#000",
                       },
                       inputAndroid: {
                         fontSize: 16,
@@ -918,15 +988,17 @@ export default function TeacherAttendence() {
               value={selectedClass !== null ? selectedClass?.value : ""}
               style={{
                 inputIOS: {
-                  fontSize: 16,
-                  paddingVertical: 12,
-                  paddingHorizontal: 10,
-                  borderWidth: 1,
-                  borderColor: "gray",
-                  borderRadius: 4,
-                  color: theme.primaryTextColor,
-                  paddingRight: 30, // to ensure the text is never behind the icon
-                },
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    height: 36,
+    marginBottom: 10,
+    backgroundColor: "white",
+    fontSize: 16,
+    color: "#000",
+  },
                 inputAndroid: {
                   fontSize: 16,
                   paddingHorizontal: 10,

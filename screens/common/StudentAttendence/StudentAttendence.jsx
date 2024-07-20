@@ -16,6 +16,8 @@ import StudentAttendenceShimmer from "./StudentAttendenceShimmer";
 import { useThemeContext } from "../../../hooks/useTheme";
 import { post } from "../../../utils/apis/TeacherApis/login";
 import { useSelector } from "react-redux";
+import { StyleSheet } from "react-native";
+import { Platform } from "react-native";
 // import { theme } from "../../../theming";
 
 export default function TodayAttendance({ GraphData }) {
@@ -149,8 +151,8 @@ export default function TodayAttendance({ GraphData }) {
   };
 
   const handleStartDateConfirm = (date) => {
-    setDate(moment(date).format("YYYY-MM-DD"));
     setIsDatePickerVisible(false);
+    setDate(moment(date).format("YYYY-MM-DD"));
     fetchAttendenceData(date);
   };
 
@@ -538,17 +540,74 @@ export default function TodayAttendance({ GraphData }) {
           onConfirm={handleStartDateConfirm}
           onCancel={hideStartDatePicker}
         /> */}
-        <View style={{ marginBottom: 40 }} />
-        <DateTimePickerModal
+
+        <View style={styles.container} />
+        {/* <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="date"
-          textColor={colors.text}
+          display={Platform.OS === "ios" ? "inline" : "spinner"}
+          textColor="#000"
           maximumDate={new Date()}
           date={date ? new Date(date) : new Date()}
           onConfirm={handleStartDateConfirm}
           onCancel={hideStartDatePicker}
+        /> */}
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "inline"}
+          onConfirm={handleStartDateConfirm}
+          onCancel={hideStartDatePicker}
+          date={date ? new Date(date) : new Date()}
+          maximumDate={new Date()}
+          textColor={Platform.OS === "ios" ? "#000" : "#FFF"}
+          confirmTextIOS="Confirm"
+          cancelTextIOS="Cancel"
+          headerTextIOS="Select a Date"
+          isDarkModeEnabled={true}
+          // style={styles.picker}
+          style={{ modal: { backgroundColor: "#00000080" } }}
         />
+        {/* <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "spinner"}
+          onConfirm={handleStartDateConfirm}
+          onCancel={hideStartDatePicker}
+          date={date ? new Date(date) : new Date()}
+          maximumDate={new Date()}
+          confirmTextIOS="Confirm"
+          cancelTextIOS="Cancel"
+          headerTextIOS="Select a Date"
+          isDarkModeEnabled={false}
+        /> */}
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "transparent", // Adjust if needed
+  },
+  picker: {
+    // Styling the picker container
+    backgroundColor: "#000", // Set background color for visibility
+    borderRadius: 10,
+    width: "90%",
+    padding: 10,
+  },
+  iosPicker: {
+    // Specific iOS picker styles
+    backgroundColor: "white", // Ensure background is set to avoid light text
+    color: "black", // Set text color for visibility
+  },
+  androidPicker: {
+    // Specific Android picker styles (if needed)
+    backgroundColor: "white", // Ensure background is set
+    color: "black", // Set text color for visibility
+  },
+});

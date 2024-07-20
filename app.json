@@ -16,9 +16,17 @@
       "supportsTablet": true,
       "bundleIdentifier": "y",
       "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to save files.",
+        "NSMicrophoneUsageDescription": "We need access to your microphone for recording audio.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "NSLocationWhenInUseUsageDescription": "We use your location to provide better services.",
+        "NSUserTrackingUsageDescription": "We use your tracking data to provide better services.",  
+        "NSCameraUsageDescription": "We need access to your camera to take photos.",
+        "NSDocumentDirectoryUsageDescription": "We need access to your documents to read files."
+        
       }
     },
     "android": {

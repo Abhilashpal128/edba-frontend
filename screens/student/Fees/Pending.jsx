@@ -18,10 +18,14 @@ import { Ionicons } from "react-native-vector-icons";
 import { Entypo } from "react-native-vector-icons";
 import moment from "moment";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/StudentApis";
+import { useSelector } from "react-redux";
 
 export default function Pending({ navigation, route }) {
   const { colors } = useTheme();
   const { theme } = useThemeContext();
+  const userData = useSelector((state) => state?.login?.user);
+  console.log(`userData userData`, userData);
 
   const [feeDetails, setFeeDetails] = useState([
     {
@@ -75,6 +79,10 @@ export default function Pending({ navigation, route }) {
   };
 
   const [displayIndex, setDisplayIndex] = useState(0);
+
+  const fetchFeeDetais = async () => {
+    const response = await post("", {});
+  };
 
   const renderItem = ({ item, index }) => {
     return (

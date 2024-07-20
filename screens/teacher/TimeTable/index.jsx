@@ -765,16 +765,18 @@ export default function TeacherTimeTable({ navigation, route }) {
                     items={Months}
                     placeholder={{ label: "Select Month", value: "" }}
                     style={{
-                      inputIOS: [
-                        {
-                          borderWidth: 1,
-                          borderColor: "#ccc",
-                          paddingHorizontal: 10,
-                          borderRadius: 5,
-                          marginBottom: 10,
-                          color: theme.primaryTextColor,
-                        },
-                      ],
+                      inputIOS: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    height: 36,
+    marginBottom: 10,
+    backgroundColor: "white",
+    fontSize: 16,
+    color: "#000",
+  },
                       inputAndroid: [
                         {
                           borderWidth: 1,

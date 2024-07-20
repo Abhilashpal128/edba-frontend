@@ -332,7 +332,7 @@ export default function AssignGrade({
               </View>
             </View>
             <View style={{ marginTop: 30 }}>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{
                   height: 40,
                   margin: 10,
@@ -345,6 +345,24 @@ export default function AssignGrade({
                     handleSubmit();
                   }}
                 />
+              </TouchableOpacity> */}
+              <TouchableOpacity
+                style={{
+                  width: "90%",
+                  height: 40,
+                  backgroundColor: theme.primarycolor,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: 7,
+                  marginTop: 10,
+                  marginHorizontal: "auto",
+                }}
+                onPress={() => {
+                  handleSubmit();
+                }}
+              >
+                <Text style={{ color: "#FFFFFF" }}>SUBMIT</Text>
               </TouchableOpacity>
             </View>
           </View>

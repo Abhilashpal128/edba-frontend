@@ -35,6 +35,7 @@ import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useTheme } from "react-native-paper";
 import { Buffer } from "buffer";
+import { Platform } from "react-native";
 // import RNFetchBlob from "rn-fetch-blob";
 
 // import { Picker } from "@react-native-picker/picker";
@@ -173,48 +174,66 @@ export default function AddAssignment() {
             let fileContents;
             let tempUri = document.uri;
 
-            if (document.uri.startsWith("content://")) {
-              // Handle content URI
-              const fileInfo = await FileSystem.getInfoAsync(document.uri);
-              if (!fileInfo.exists) {
-                throw new Error(`File does not exist: ${document.uri}`);
+            try {
+              if (
+                Platform.OS === "ios" &&
+                document.uri.startsWith("content://")
+              ) {
+                tempUri = FileSystem.documentDirectory + "your-file.txt"; // Adjust path as needed
+                console.log("Reading file from URI:", tempUri);
+                const fileInfo = await FileSystem.getInfoAsync(document.uri);
+                if (!fileInfo.exists) {
+                  throw new Error(`File does not exist: ${document.uri}`);
+                }
+
+                // Copy content URI to a temporary file
+                tempUri = FileSystem.documentDirectory + document.name;
+                await FileSystem.copyAsync({
+                  from: document.uri,
+                  to: tempUri,
+                });
+              } else if (Platform.OS === "android") {
+                // Android may use the original URI or other handling
+                tempUri = document.uri;
               }
 
-              // Copy content URI to a temporary file
-              const tempFileUri = FileSystem.documentDirectory + document.name;
-              await FileSystem.copyAsync({
-                from: document.uri,
-                to: tempFileUri,
+              // Read the file from either the original URI or the temporary URI
+              const fileContent = await FileSystem.readAsStringAsync(tempUri, {
+                encoding: FileSystem.EncodingType.Base64,
               });
-              tempUri = tempFileUri;
+
+              const buffer = Buffer.from(fileContent, "base64");
+              const params = {
+                Bucket: "edba-dev-bucket",
+                Key: `Assignments/${document.name}`,
+                Body: buffer,
+                ContentType: document.mimeType,
+              };
+
+              const uploadedDocument = await s3.upload(params).promise();
+              console.log(
+                "Document uploaded successfully:",
+                uploadedDocument.Key
+              );
+
+              return {
+                key: uploadedDocument.Key,
+                url: uploadedDocument.Location,
+                label: document.name,
+              };
+            } catch (error) {
+              console.error("Error uploading document:", error);
+              throw error;
             }
-
-            // Read the file from either the original URI or the temporary URI
-            fileContents = await FileSystem.readAsStringAsync(tempUri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-
-            const buffer = Buffer.from(fileContents, "base64");
-            const params = {
-              Bucket: "edba-dev-bucket",
-              Key: `Assignments/${document.name}`,
-              Body: buffer,
-              ContentType: document.mimeType,
-            };
-
-            const uploadedDocument = await s3.upload(params).promise();
-
-            console.log(
-              "Document uploaded successfully:",
-              uploadedDocument.Key
-            );
-
-            return {
-              key: uploadedDocument.Key,
-              url: uploadedDocument.Location,
-              label: document.name,
-            };
           });
+
+          Promise.all(uploadTasks)
+            .then((results) => {
+              console.log("All documents uploaded:", results);
+            })
+            .catch((error) => {
+              console.error("Error uploading documents:", error);
+            });
 
           const uploadedDocuments = await Promise.all(uploadTasks);
           return uploadedDocuments;
@@ -393,6 +412,240 @@ export default function AddAssignment() {
       Alert.alert("Error", "There was an error submitting the assignment.");
     }
   };
+  // const onSubmit = async (data) => {
+  //   try {
+  //     setIsloading(true);
+  //     // const formData = new FormData();
+
+  //     console.log(`Add Assignment Data`, data);
+  //     console.log(`date`, submissionDate);
+
+  //     const UploadDocumentTos3 = async () => {
+  //       try {
+  //         const uploadTasks = documents.map(async (document) => {
+  //           let fileContents;
+  //           let tempUri = document.uri;
+
+  //           if (document.uri.startsWith("content://")) {
+  //             // Handle content URI
+  //             const fileInfo = await FileSystem.getInfoAsync(document.uri);
+  //             if (!fileInfo.exists) {
+  //               throw new Error(`File does not exist: ${document.uri}`);
+  //             }
+
+  //             // Copy content URI to a temporary file
+  //             const tempFileUri = FileSystem.documentDirectory + document.name;
+  //             await FileSystem.copyAsync({
+  //               from: document.uri,
+  //               to: tempFileUri,
+  //             });
+  //             tempUri = tempFileUri;
+  //           }
+
+  //           // Read the file from either the original URI or the temporary URI
+  //           fileContents = await FileSystem.readAsStringAsync(tempUri, {
+  //             encoding: FileSystem.EncodingType.Base64,
+  //           });
+
+  //           const buffer = Buffer.from(fileContents, "base64");
+  //           const params = {
+  //             Bucket: "edba-dev-bucket",
+  //             Key: `Assignments/${document.name}`,
+  //             Body: buffer,
+  //             ContentType: document.mimeType,
+  //           };
+
+  //           const uploadedDocument = await s3.upload(params).promise();
+
+  //           console.log(
+  //             "Document uploaded successfully:",
+  //             uploadedDocument.Key
+  //           );
+
+  //           return {
+  //             key: uploadedDocument.Key,
+  //             url: uploadedDocument.Location,
+  //             label: document.name,
+  //           };
+  //         });
+
+  //         const uploadedDocuments = await Promise.all(uploadTasks);
+  //         return uploadedDocuments;
+  //       } catch (error) {
+  //         setIsloading(false);
+  //         console.error("Error uploading documents:", error);
+  //         Alert.alert("Upload Failed", "Error uploading documents");
+  //         throw error; // Throw the error to handle it further if needed
+  //       } finally {
+  //         setIsloading(false);
+  //       }
+  //     };
+
+  //     const docs = await UploadDocumentTos3();
+  //     console.log(`docs`, docs);
+
+  //     try {
+  //       const postData = {
+  //         ...data,
+  //         teacher: TeacherId,
+  //         submissionDate: submissionDate,
+  //         documents: docs,
+  //       };
+  //       console.log(`Submitted Assignment data`, postData);
+
+  //       const response = await post("assignments/create", postData);
+  //       if (response?.errCode == -1) {
+  //         Alert.alert("Assignment Created Successfully");
+  //         navigation.navigate("Assignments");
+  //       } else {
+  //         Alert.alert(
+  //           response?.errMsg
+  //             ? JSON.stringify(response?.errMsg)
+  //             : "Error creating assignment"
+  //         );
+  //       }
+  //     } catch (error) {
+  //       console.log(error);
+  //       setIsloading(false);
+  //     } finally {
+  //       setIsloading(false);
+  //     }
+
+  //     // Alert.alert(JSON.stringify(data));
+
+  //     // const UploadDocumentTos3 = async (document) => {
+  //     //   try {
+  //     //     const fileContents = await FileSystem.readAsStringAsync(
+  //     //       document?.uri,
+  //     //       {
+  //     //         encoding: FileSystem.EncodingType.Base64,
+  //     //       }
+  //     //     );
+
+  //     //     const buffer = Buffer.from(fileContents, "base64");
+
+  //     //     const params = {
+  //     //       Bucket: "edba-dev-bucket",
+  //     //       Key: `Assignments/${document?.name}`,
+  //     //       Body: buffer,
+  //     //       ContentType: document?.mimeType,
+  //     //     };
+
+  //     //     var uploadedDocument = await s3.upload(params).promise(); // Wait for the upload to complete
+  //     //     return {
+  //     //       key: uploadedDocument.Key,
+  //     //       url: uploadedDocument.Location,
+  //     //       label: document.name,
+  //     //     };
+
+  //     //     console.log("Document uploaded successfully:", Document.Key);
+
+  //     //     // Alert.alert("Upload Successful", `Document URL: ${Document.Location}`);
+
+  //     //     // Optionally, send the document link to your API
+  //     //     // await axios.post('http://your-api-url/receive-document-link', {
+  //     //     //   fileUrl: data.Location,
+  //     //     // });
+
+  //     //     // return data.Location;
+  //     //   } catch (error) {
+  //     //     console.error("Error uploading document:", error);
+  //     //     Alert.alert("Upload Failed", "Error uploading document");
+  //     //     throw error; // Throw the error to handle it further if needed
+  //     //   }
+  //     // };
+
+  //     // };
+
+  //     // try {
+  //     //   const postData = {
+  //     //     ...data,
+  //     //     teacher: TeacherId,
+  //     //     submissionDate: submissionDate,
+  //     //     documents: [
+  //     //       {
+  //     //         key: Document?.Key,
+  //     //         url: Document?.Location,
+  //     //         label: fileName,
+  //     //       },
+  //     //     ],
+  //     //   };
+  //     //   console.log(`Submitted Assignment data`, postData);
+
+  //     //   const response = await post("assignments/create", postData);
+  //     //   if (response?.errCode == -1) {
+  //     //     Alert.alert("Assignment Created Successfully");
+  //     //     navigation.navigate("Assignments");
+  //     //   } else {
+  //     //     Alert.alert(
+  //     //       response?.errMsg
+  //     //         ? JSON.stringify(response?.errMsg)
+  //     //         : "Error creating assignment"
+  //     //     );
+  //     //   }
+  //     // } catch (error) {
+  //     //   console.log(error);
+  //     // }
+
+  //     // formData.append("file", {
+  //     //   uri: fileUri,
+  //     //   type: fileType,
+  //     //   name: fileName,
+  //     // });
+  //     // formData.append("className", data.className);
+  //     // formData.append("subject", data.subject);
+  //     // formData.append("topic", data.topic);
+  //     // formData.append("instructions", data.instructions);
+  //     // formData.append("resources", data.resources);
+  //     // formData.append("teacherId", "66717b8653d55c5bfda2e99f");
+  //     // console.log(`FormmmDaatatata`, formData);
+
+  //     // const postData = { ...data, teacherId: "66717b8653d55c5bfda2e99f" };
+  //     // const response = await post("assignments", formData);
+
+  //     // const formDataObject = {};
+  //     // for (let pair of formData._parts) {
+  //     //   const key = pair[0];
+  //     //   const value = pair[1];
+  //     //   formDataObject[key] = value;
+  //     // }
+
+  //     // console.log("FormDataObject:", formDataObject);
+
+  //     // api calling
+  //     // try {
+  //     //   const postData = {
+  //     //     ...data,
+  //     //     teacher: TeacherId,
+  //     //     submissionDate: submissionDate,
+  //     //   };
+  //     //   console.log(`data`, post);
+
+  //     //   const response = await post("assignments/create", postData);
+  //     //   if (response?.errCode == -1) {
+  //     //     Alert.alert("Assignment Created Successfully");
+  //     //     navigation.navigate("Assignments");
+  //     //   } else {
+  //     //     Alert.alert(
+  //     //       response?.errMsg
+  //     //         ? JSON.stringify(response?.errMsg)
+  //     //         : "Error creating assignment"
+  //     //     );
+  //     //   }
+  //     // } catch (error) {
+  //     //   console.log(error);
+  //     // }
+
+  //     // if (response.success == true) {
+  //     //   Alert.alert("Success", "Assignment submitted successfully!");
+  //     // } else {
+  //     //   Alert.alert("Error", " There was an error submitting the assignment.");
+  //     // }
+  //   } catch (error) {
+  //     console.error(`catched error`, error);
+  //     Alert.alert("Error", "There was an error submitting the assignment.");
+  //   }
+  // };
 
   const getClassList = async () => {
     const response = await post("teacher/class", { teacherId: TeacherId });
@@ -587,19 +840,18 @@ export default function AddAssignment() {
               items={classes}
               placeholder={{ label: "Select Class", value: "" }}
               style={{
-                inputIOS: [
-                  {
-                    borderWidth: 1,
-                    height: 36,
-                    borderColor: "#ccc",
-                    padding: 10,
-                    borderRadius: 5,
-                    marginBottom: 10,
-                  },
-                  errors.class && {
-                    borderColor: "red",
-                  },
-                ],
+                inputIOS: {
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 12,
+                  height: 36,
+                  marginBottom: 10,
+                  backgroundColor: "white",
+                  fontSize: 16,
+                  color: "#000",
+                },
                 inputAndroid: [
                   {
                     borderWidth: 1,
@@ -665,19 +917,18 @@ export default function AddAssignment() {
                   items={divisionList}
                   placeholder={{ label: "Select Division", value: "" }}
                   style={{
-                    inputIOS: [
-                      {
-                        borderWidth: 1,
-                        height: 36,
-                        borderColor: "#ccc",
-                        padding: 10,
-                        borderRadius: 5,
-                        marginBottom: 10,
-                      },
-                      errors.subject && {
-                        borderColor: "red",
-                      },
-                    ],
+                    inputIOS: {
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                      borderRadius: 5,
+                      paddingHorizontal: 10,
+                      paddingVertical: 12,
+                      height: 36,
+                      marginBottom: 10,
+                      backgroundColor: "white",
+                      fontSize: 16,
+                      color: "#000",
+                    },
                     inputAndroid: [
                       {
                         borderWidth: 1,
@@ -745,19 +996,18 @@ export default function AddAssignment() {
                   items={subjectList}
                   placeholder={{ label: "Select Subject", value: "" }}
                   style={{
-                    inputIOS: [
-                      {
-                        borderWidth: 1,
-                        height: 36,
-                        borderColor: "#ccc",
-                        padding: 10,
-                        borderRadius: 5,
-                        marginBottom: 10,
-                      },
-                      errors.subject && {
-                        borderColor: "red",
-                      },
-                    ],
+                    inputIOS: {
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                      borderRadius: 5,
+                      paddingHorizontal: 10,
+                      paddingVertical: 12,
+                      height: 36,
+                      marginBottom: 10,
+                      backgroundColor: "white",
+                      fontSize: 16,
+                      color: "#000",
+                    },
                     inputAndroid: [
                       {
                         borderWidth: 1,

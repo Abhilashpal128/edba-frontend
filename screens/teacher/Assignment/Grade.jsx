@@ -471,16 +471,18 @@ export default function Grade({ navigation, route }) {
               items={assignmentStatus}
               placeholder={{ label: "All Students", value: "allStudents" }}
               style={{
-                inputIOS: [
-                  {
-                    borderWidth: 1,
-                    height: 36,
-                    borderColor: "#ccc",
-                    padding: 10,
-                    borderRadius: 5,
-                    marginBottom: 10,
-                  },
-                ],
+                inputIOS: {
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 12,
+                  height: 36,
+                  marginBottom: 10,
+                  backgroundColor: "white",
+                  fontSize: 16,
+                  color: "#000",
+                },
                 inputAndroid: [
                   {
                     borderWidth: 1,

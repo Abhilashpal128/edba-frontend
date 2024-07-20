@@ -14,7 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setToken } from "../Redux/slices/Tokenslice";
 import { getDataFromStorage, storeDataInStorage } from "../Storage/storage";
 import { login } from "../Redux/slices/LoginSlice";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 
 const AppNavigator = () => {
   let userData = useSelector((state) => state.login.user);
@@ -24,6 +24,7 @@ const AppNavigator = () => {
   const Stack = createStackNavigator();
   console.log(`userData in AppNavigator`, userData);
   const dispatch = useDispatch();
+  const navigation = useNavigation();
 
   const UserLoginCheck = async () => {
     const userDataFromStorage = await getDataFromStorage("userData");
@@ -86,6 +87,7 @@ const AppNavigator = () => {
         "Notification response received: in Appnavigator",
         response?.notification
       );
+      navigation.navigate("Notification");
     };
 
     const setupNotificationListeners = () => {

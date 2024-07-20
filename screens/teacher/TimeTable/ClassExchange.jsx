@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Checkbox, useTheme } from "react-native-paper";
-import { AntDesign, EvilIcons } from "react-native-vector-icons";
+import { AntDesign, EvilIcons, Feather } from "react-native-vector-icons";
 import moment from "moment";
 import RNPickerSelect from "react-native-picker-select";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -20,6 +20,7 @@ import { post } from "../../../utils/apis/TeacherApis/login";
 import { useSelector } from "react-redux";
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import axios from "axios";
+import { Platform } from "react-native";
 // import { theme } from "../../../theming";
 
 // const TeacherClasses = [
@@ -238,6 +239,18 @@ export default function ClassExchange({
   //   );
   // }
 
+  const checkboxStyle =
+    Platform.OS === "ios"
+      ? {
+          borderColor: "black",
+          borderWidth: 1,
+          color: theme.primarycolor,
+        }
+      : {
+          borderColor: "black",
+          color: theme.primarycolor,
+        };
+
   const cancelPendingRequest = async () => {
     console.log(`exchangeRequestId`, exchangeRequestId);
     try {
@@ -394,15 +407,32 @@ export default function ClassExchange({
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
+            gap: 10,
           }}
         >
-          <Checkbox
+          {/* <Checkbox
             status={isChecked ? "checked" : "unchecked"}
             onPress={() => {
               setIsChecked(!isChecked);
             }}
+            style={checkboxStyle}
             color={theme.primarycolor}
-          />
+          /> */}
+          <TouchableOpacity
+            onPress={() => {
+              setIsChecked(!isChecked);
+            }}
+          >
+            <Feather
+              name={isChecked ? "check-square" : "square"}
+              size={20}
+              color={isChecked ? "blue" : "#cc"}
+            />
+          </TouchableOpacity>
+          {/* <AntDesign name="checksquareo" size={20} />
+          <AntDesign name="checksquare" size={20} color={"blue"} />
+          <Feather name="square" size={20} />
+          <Feather name="check-square" size={20} color={"blue"} /> */}
           <Text
             style={{
               fontWeight: "500",
@@ -436,16 +466,18 @@ export default function ClassExchange({
               items={TeacherList}
               placeholder={{ label: "Select Teacher", value: "" }}
               style={{
-                inputIOS: [
-                  {
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    paddingHorizontal: 10,
-                    borderRadius: 5,
-                    height: 36,
-                    color: theme.primaryTextColor,
-                  },
-                ],
+                inputIOS: {
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 12,
+                  height: 36,
+                  marginBottom: 10,
+                  backgroundColor: "white",
+                  fontSize: 16,
+                  color: "#000",
+                },
                 inputAndroid: [
                   {
                     borderWidth: 1,

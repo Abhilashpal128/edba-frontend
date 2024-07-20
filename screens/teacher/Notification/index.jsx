@@ -44,7 +44,7 @@ export default function TeacherNotification() {
   const [isLoading, setIsLoading] = useState(false);
   const userData = useSelector((state) => state?.login?.user);
   const userId = userData?.id;
-  const [selectedIds, setSelectedIds] = useState([]); 
+  const [selectedIds, setSelectedIds] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreData, setHasMoreData] = useState(true);
   const [page, setPage] = useState(1); // Track the current page

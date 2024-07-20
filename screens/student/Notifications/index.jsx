@@ -340,7 +340,7 @@ import { post } from "../../../utils/apis/TeacherApis/login";
 import { useSelector } from "react-redux";
 import { MaterialIcons } from "@expo/vector-icons";
 
-export default function TeacherNotification() {
+export default function StudentNotification() {
   const isFocused = useIsFocused();
   const { theme } = useThemeContext();
   const navigation = useNavigation();

@@ -19,6 +19,7 @@ import { useTheme, Avatar, Divider, Button } from "react-native-paper";
 import { Delete, post } from "../../../utils/apis/TeacherApis/login";
 import { useIsFocused } from "@react-navigation/native";
 import moment from "moment/moment";
+import { Linking } from "react-native";
 
 export default function ShowAssignment({ navigation, route }) {
   const { theme } = useThemeContext();
