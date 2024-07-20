@@ -68,6 +68,7 @@ export default function EditPersonalDetail({
     if (response?.errCode == -1) {
       Alert.alert("Profile Updated successfully");
       setIsOpenPersonalTab(false);
+      console.log(`upadetsd Details `, response?.data);
     }
     console.log(`response response`, response);
   };

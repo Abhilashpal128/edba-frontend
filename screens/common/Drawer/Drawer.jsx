@@ -81,7 +81,7 @@ export default function CustomDrawer({ navigation }) {
               alignItems: "center",
             }}
           >
-            {userData?.ProfileImage != null ? (
+            {userData?.profileImage != null ? (
               <View
                 style={{
                   height: 40,
@@ -94,7 +94,7 @@ export default function CustomDrawer({ navigation }) {
               >
                 {/* <FontAwesome name="institution" size={20} color="#fff" /> */}
                 <Image
-                  source={{ uri: userData?.ProfileImage }}
+                  source={{ uri: userData?.profileImage }}
                   resizeMode="contain"
                   style={{
                     width: 40,

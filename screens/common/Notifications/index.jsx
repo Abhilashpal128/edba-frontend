@@ -125,6 +125,16 @@ export default function Notification({ Notifications }) {
   const handlerejectRequest = () => {};
 
   const renderNotifications = ({ item }) => {
+    let formatedDate = "";
+    console.log(item?.sentAt);
+    const NotifiationDate = moment(item?.sentAt);
+    const today = moment().startOf("day");
+
+    if (NotifiationDate.isSame(today, "day")) {
+      formatedDate = moment(item?.sentAt).format("h:mm A");
+    } else {
+      NotifiationDate.format("MMM DD");
+    }
     const formattedTime = moment(item?.sentAt).format("h:mm A");
     return (
       <TouchableOpacity
@@ -159,7 +169,7 @@ export default function Notification({ Notifications }) {
               fontSize: 12,
             }}
           >
-            {formattedTime}
+            {formatedDate}
           </Text>
         </View>
         <Text

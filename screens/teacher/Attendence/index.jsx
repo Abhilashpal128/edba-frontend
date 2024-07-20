@@ -228,6 +228,7 @@ export default function TeacherAttendence() {
 
   const handleClassSelect = async (value) => {
     console.log(`value`, value);
+    setClassError(false);
     setSelectedClass(value);
     fetchDivisionBasedonclas(value);
     fetchTeacherSubjects(value);
@@ -437,7 +438,7 @@ export default function TeacherAttendence() {
     const date = moment(newDate).format("YYYY-MM-DD");
     if (selectedDivision != null) {
       const response = await post("attendences/get", {
-        division: selectedDivision?.value,
+        division: selectedDivision,
         date: date,
         teacherId: TeacherId,
       });
@@ -521,14 +522,15 @@ export default function TeacherAttendence() {
         return null;
       }
 
-      const classId = selectedClass?.value;
+      const classId = selectedClass;
+      console.log(`classIdd`, classId);
       const date = moment(selectedDate).format("YYYY-MM-DD");
       const absentees = absentList.map((absent) => ({
-        id: absent,
+        studentId: absent,
         status: "Absent",
       }));
       const postData = {
-        classId: classId,
+        classId: selectedClass,
         date,
         absentees,
         teacherId: TeacherId,
@@ -536,6 +538,7 @@ export default function TeacherAttendence() {
         slotValue: slot,
         subjectId: selectedSubject,
         settingId: SettingId ? SettingId : null,
+        division: selectedDivision ? selectedDivision : null,
       };
       const response = await post("attendences/mark", postData);
       console.log(`AttendenceResponse`, response?.data);
@@ -700,7 +703,11 @@ export default function TeacherAttendence() {
                     paddingRight: 30, // to ensure the text is never behind the icon
                   },
                 }}
-                placeholder={{ label: "hello", value: "" }}
+                placeholder={{
+                  label: "Select Class",
+                  value: null,
+                  disabled: true,
+                }}
                 color={theme.primaryTextColor}
               />
             </View>
@@ -754,7 +761,11 @@ export default function TeacherAttendence() {
                     paddingRight: 30, // to ensure the text is never behind the icon
                   },
                 }}
-                placeholder={{ label: "select Division", value: null }}
+                placeholder={{
+                  label: "select Division",
+                  value: null,
+                  disabled: true,
+                }}
                 color={theme.primaryTextColor}
               />
             </View>
@@ -813,7 +824,11 @@ export default function TeacherAttendence() {
                         paddingRight: 30, // to ensure the text is never behind the icon
                       },
                     }}
-                    placeholder={{ label: "Select Class", value: null }}
+                    placeholder={{
+                      label: "Select Slot",
+                      value: null,
+                      disabled: true,
+                    }}
                     color={theme.primaryTextColor}
                   />
                 </View>

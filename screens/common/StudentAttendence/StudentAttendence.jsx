@@ -61,20 +61,18 @@ export default function TodayAttendance({ GraphData }) {
   // }));
 
   const chartConfig = {
+    backgroundColor: "#ffffff",
     backgroundGradientFrom: "#ffffff",
     backgroundGradientTo: "#ffffff",
-    color: (opacity = 1) => theme.primaryColor,
-    labelColor: (opacity = 1) => theme.primaryTextColor,
+    color: (opacity = 1) => theme.primarycolor, // Set primary color for the line
+    labelColor: (opacity = 1) => theme.primaryTextColor, // Set text color for labels
     style: {
       borderRadius: 16,
     },
-    propsForDots: {
-      r: "6",
-      strokeWidth: "2",
-      stroke: "#ffa726",
-    },
-  };
 
+    fillShadowGradient: theme.primarycolor, // Set primary color for the fill gradient
+    fillShadowGradientOpacity: 0.5, // Adjust opacity for the fill
+  };
   const chartWidth = Math.max(
     screenWidth,
     (screenWidth / 2) * sortedClassData.length
@@ -119,7 +117,7 @@ export default function TodayAttendance({ GraphData }) {
         const convertToGraphData = (data) => {
           return data.map((item) => ({
             value: item.presentCount, // Use the presentCount as the value
-            label: item.className, // Use the className as the label
+            label: `${item?.className}-${item?.divisionName}`, // Use the className as the label
           }));
         };
         const graphData = convertToGraphData(response?.data);
@@ -437,8 +435,8 @@ export default function TodayAttendance({ GraphData }) {
           width={screenWidth}
           height={220}
           chartConfig={chartConfig}
-          color1={theme.primaryColor}
-          startFillColor1={theme.primaryColor}
+          color1={theme.primarycolor}
+          startFillColor1={theme.primarycolor}
           endFillColor1="#DADEFF"
           startOpacity={0.9}
           endOpacity={0.1}
@@ -468,7 +466,7 @@ export default function TodayAttendance({ GraphData }) {
                 <View
                   style={{
                     borderWidth: 1,
-                    borderColor: theme.primaryColor,
+                    borderColor: theme.primarycolor,
                     borderRadius: 8,
                   }}
                 >
@@ -486,6 +484,24 @@ export default function TodayAttendance({ GraphData }) {
                       }}
                     >
                       {moment(date).format("DD MMMM YYYY")}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: theme.primaryTextColor,
+                        fontSize: 14,
+                      }}
+                    >
+                      {items ? items[0]["label"] : 0}
                     </Text>
                   </View>
                   <View

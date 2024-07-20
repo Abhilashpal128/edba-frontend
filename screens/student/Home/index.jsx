@@ -304,9 +304,9 @@ export default function StudentHome() {
             }}
             style={{ marginRight: 10 }}
           >
-            {user?.ProfileImage != null ? (
+            {user?.profileImage != null ? (
               <Image
-                source={{ uri: user?.ProfileImage }}
+                source={{ uri: user?.profileImage }}
                 resizeMode="contain"
                 style={{
                   width: 40,

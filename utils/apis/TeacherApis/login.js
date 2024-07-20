@@ -2,8 +2,8 @@ import axios from "axios";
 
 // const apiUrl = "http://192.168.1.131:5000/v1";
 // const apiUrl = "http://192.168.68.115:3000/v1";
-const apiUrl = "http://192.46.208.52:5000/v1";
-// const apiUrl = "http://192.168.1.144:5000/v1";
+// const apiUrl = "http://192.46.208.52:5000/v1";
+const apiUrl = "http://192.168.1.144:5000/v1";
 
 const config = {
   headers: {

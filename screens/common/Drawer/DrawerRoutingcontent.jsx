@@ -86,11 +86,11 @@ export default function DrawerRoutingcontent() {
             icon: "airplane-takeoff",
             screen: "Leave",
           },
-          // {
-          //   name: "Fees",
-          //   icon: "cash-multiple",
-          //   screen: "Fees",
-          // },
+          {
+            name: "Fees",
+            icon: "cash-multiple",
+            screen: "Fees",
+          },
           // { name: "Inbox", icon: "email-outline", screen: "inbox" },
         ])
       : (sideMenu = [

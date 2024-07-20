@@ -382,7 +382,6 @@ export default function CreatePassword({ navigation, route }) {
           otp,
         });
         if (response?.errCode == -1) {
-          
           Alert.alert("Success", "Password Updated Successfully");
           navigation.navigate("Login");
         } else {

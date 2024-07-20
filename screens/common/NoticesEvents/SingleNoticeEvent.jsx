@@ -24,6 +24,7 @@ import { Feather, Ionicons, Entypo } from "react-native-vector-icons";
 import Icon from "react-native-vector-icons/Ionicons";
 import moment from "moment";
 import RBSheet from "react-native-raw-bottom-sheet";
+import { Linking } from "react-native";
 
 export default function SingleNoticeEvent({ navigation, route }) {
   const { theme } = useThemeContext();
@@ -290,7 +291,8 @@ export default function SingleNoticeEvent({ navigation, route }) {
           </View>
         </View>
         {details?.documents?.length > 0 && (
-          <View>
+          <View style={{ marginTop: 10, gap: 10 }}>
+            <Text>Attatchments :</Text>
             {details?.documents.map((item, index) => (
               <View key={index}>
                 {fileType == "image" && (
@@ -316,7 +318,10 @@ export default function SingleNoticeEvent({ navigation, route }) {
                       </Text>
                     </View>
                     <Image
-                      source={{ uri: item?.url }}
+                      source={{
+                        uri: `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`,
+                        // uri: `https://unsplash.com/photos/aerial-view-photography-of-mountains-VO1EisKqdEE`,
+                      }}
                       style={{
                         width: "80%",
                         height: 250,
@@ -327,8 +332,58 @@ export default function SingleNoticeEvent({ navigation, route }) {
                   </View>
                 )}
                 {fileType == "pdf" && (
-                  <View>
-                    <Text>PDF</Text>
+                  <View
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    key={index}
+                  >
+                    <TouchableOpacity
+                      style={{
+                        height: 46,
+                        width: "100%",
+                        backgroundColor: "#AAAAAA",
+                        borderRadius: 5,
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                      onPress={() => {
+                        Linking.openURL(
+                          `http://d7y6l36yifl1o.cloudfront.net/${item?.key}`
+                        );
+                      }}
+                    >
+                      <Ionicons
+                        name="document-outline"
+                        size={24}
+                        color="#FFFFFF"
+                      />
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#fff",
+                          fontWeight: "semibold",
+                        }}
+                      >
+                        {item?.label}
+                      </Text>
+                    </TouchableOpacity>
+                    {/* <Button
+                    mode={"contained"}
+                    buttonColor="#2B78CA"
+                    contentStyle={{ height: 40 }}
+                    labelStyle={{
+                      fontSize: 14,
+                      color: "#fff",
+                    }}
+                    style={{ borderRadius: 8 }}
+                  >
+                    Submit Assignment
+                  </Button> */}
                   </View>
                 )}
                 {fileType == null && (

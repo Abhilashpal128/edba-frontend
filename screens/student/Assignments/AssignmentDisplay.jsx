@@ -15,7 +15,13 @@ import {
 import { Svg, Circle, Text as SvgText, Path } from "react-native-svg";
 import { useTheme, Avatar, Divider, Button } from "react-native-paper";
 import { FontAwesome6 } from "react-native-vector-icons";
-import { Ionicons } from "react-native-vector-icons";
+import {
+  Ionicons,
+  Entypo,
+  AntDesign,
+  FontAwesome,
+} from "react-native-vector-icons";
+import {} from "react-native-vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { Buffer } from "buffer";
@@ -33,6 +39,7 @@ export default function AssignmentDisplay({ navigation, route }) {
   const [submitButtonPressed, setisSubmitButtonPressed] = useState(false);
   const [teacherDetails, setTeacherDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [documents, setDocuments] = useState([]);
   const params = route.params;
   const { theme } = useThemeContext();
   const userData = useSelector((state) => state?.login?.user);
@@ -127,6 +134,10 @@ export default function AssignmentDisplay({ navigation, route }) {
     });
   }, [navigation, params, theme]);
 
+  const removeFile = (index) => {
+    setDocuments((prevDocs) => prevDocs.filter((_, i) => i !== index));
+  };
+
   const hexToRgba = (hex, opacity) => {
     hex = hex.replace("#", "");
     let r = parseInt(hex.substring(0, 2), 16);
@@ -168,40 +179,164 @@ export default function AssignmentDisplay({ navigation, route }) {
     fetchTetacherDetails(params?.assignment?.teacher);
   }, []);
 
+  // const pickFile = async () => {
+  //   // DocumentPicker;
+  //   try {
+  //     setisSubmitButtonPressed(false);
+  //     const result = await DocumentPicker.getDocumentAsync({
+  //       type: "*/*", // all files
+  //       copyToCacheDirectory: false,
+  //     });
+
+  //     console.log(`result`, result);
+
+  //     if (result.type !== "cancel") {
+  //       // Check if user didn't cancel
+  //       console.log("Result:", result);
+
+  //       const { uri, mimeType, name } = result.assets[0];
+
+  //       console.log("URI:", uri);
+  //       console.log("Type:", mimeType);
+  //       console.log("Name:", name);
+
+  //       setFileUri(uri);
+  //       setFileType(mimeType);
+  //       setFileName(name);
+  //     } else {
+  //       setisSubmitButtonPressed(false);
+  //       console.log("User cancelled the picker");
+  //     }
+  //   } catch (error) {
+  //     console.log("Error picking file", error);
+  //   }
+  // };
   const pickFile = async () => {
-    // DocumentPicker;
     try {
-      setisSubmitButtonPressed(false);
       const result = await DocumentPicker.getDocumentAsync({
         type: "*/*", // all files
         copyToCacheDirectory: false,
       });
 
-      console.log(`result`, result);
-
       if (result.type !== "cancel") {
-        // Check if user didn't cancel
-        console.log("Result:", result);
-
         const { uri, mimeType, name } = result.assets[0];
-
-        console.log("URI:", uri);
-        console.log("Type:", mimeType);
-        console.log("Name:", name);
-
-        setFileUri(uri);
-        setFileType(mimeType);
-        setFileName(name);
-      } else {
+        setDocuments((prevDocs) => [...prevDocs, { uri, mimeType, name }]);
         setisSubmitButtonPressed(false);
+      } else {
         console.log("User cancelled the picker");
       }
     } catch (error) {
       console.log("Error picking file", error);
+      Alert.alert("Error", "Could not pick the document");
     }
   };
 
   const handleSubmitAssignment = async () => {
+    try {
+      if (documents.length <= 0) {
+        setisSubmitButtonPressed(true);
+        return;
+      }
+      setIsLoading(true);
+
+      const UploadDocumentTos3 = async () => {
+        try {
+          const uploadTasks = documents.map(async (document) => {
+            let fileContents;
+            let tempUri = document.uri;
+
+            if (document.uri.startsWith("content://")) {
+              // Handle content URI
+              const fileInfo = await FileSystem.getInfoAsync(document?.uri);
+              if (!fileInfo.exists) {
+                throw new Error(`File does not exist: ${document?.uri}`);
+              }
+
+              // Copy content URI to a temporary file
+              const tempFileUri = FileSystem.documentDirectory + document.name;
+              await FileSystem.copyAsync({
+                from: document.uri,
+                to: tempFileUri,
+              });
+              tempUri = tempFileUri;
+            }
+
+            // Read the file from either the original URI or the temporary URI
+            fileContents = await FileSystem.readAsStringAsync(tempUri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
+            const buffer = Buffer.from(fileContents, "base64");
+            const params = {
+              Bucket: "edba-dev-bucket",
+              Key: `Assignments/${document.name}`,
+              Body: buffer,
+              ContentType: document.mimeType,
+            };
+
+            const uploadedDocument = await s3.upload(params).promise();
+
+            console.log(
+              "Document uploaded successfully:",
+              uploadedDocument.Key
+            );
+
+            return {
+              key: uploadedDocument.Key,
+              url: uploadedDocument.Location,
+              label: document.name,
+            };
+          });
+
+          const uploadedDocuments = await Promise.all(uploadTasks);
+          return uploadedDocuments;
+        } catch (error) {
+          setIsLoading(false);
+          console.error("Error uploading documents:", error);
+          Alert.alert("Upload Failed", "Error uploading documents");
+          throw error; // Throw the error to handle it further if needed
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const docs = await UploadDocumentTos3();
+      console.log(`docs`, docs);
+
+      try {
+        const postData = {
+          assignmentId: params?.assignment?.id,
+          studentId: studentId,
+          status: "completed",
+          documents: docs,
+        };
+        console.log(`Submitted Assignment data`, postData);
+
+        const response = await post("student/submission", postData);
+        if (response?.errCode == -1) {
+          Alert.alert("Assignment Submitted Successfully");
+          navigation.navigate("Assignments");
+          setIsLoading(false);
+        } else {
+          Alert.alert(
+            response?.errMsg
+              ? JSON.stringify(response?.errMsg)
+              : "Error creating assignment"
+          );
+        }
+      } catch (error) {
+        console.log(error);
+        setIsLoading(false);
+      } finally {
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error(`catched error`, error);
+      Alert.alert("Error", "There was an error submitting the assignment.");
+    }
+  };
+
+  const onsubmit = async () => {
     if (fileName == null) {
       setisSubmitButtonPressed(true);
       return;
@@ -285,34 +420,11 @@ export default function AssignmentDisplay({ navigation, route }) {
         console.log(`error in submitting student Assignment`, error);
         setIsLoading(false);
       }
-
-      // Optionally, send the document link to your API
-      // await axios.post('http://your-api-url/receive-document-link', {
-      //   fileUrl: data.Location,
-      // });
-
-      // return data.Location; // Return the uploaded document URL
     } catch (error) {
       console.error("Error uploading document:", error);
       Alert.alert("Upload Failed", "Error uploading document");
       throw error; // Throw the error to handle it further if needed
     }
-    // try {
-    //   if (fileName == null) {
-    //     setisSubmitButtonPressed(true);
-    //   } else {
-    //     const formData = new FormData();
-
-    //     formData.append("file", {
-    //       uri: fileUri,
-    //       type: fileType,
-    //       name: fileName,
-    //     });
-    //     Alert.alert("assignment has been submitted ", fileName);
-    //   }
-    // } catch (error) {
-    //   Alert.alert("Error", "There was an error submitting the assignment.");
-    // }
   };
 
   // const generateSignedUrl = (item, expiresInSeconds) => {
@@ -627,7 +739,7 @@ export default function AssignmentDisplay({ navigation, route }) {
               ))}
             </View>
           )}
-          <View style={{ marginTop: 10 }}>
+          {/* <View style={{ marginTop: 10 }}>
             <TouchableOpacity
               style={{
                 height: 70,
@@ -679,7 +791,51 @@ export default function AssignmentDisplay({ navigation, route }) {
             {submitButtonPressed && (
               <Text style={{ color: "red" }}>Upload Document first</Text>
             )}
-          </View>
+          </View> */}
+          <ScrollView style={{ marginTop: 20 }}>
+            {documents.length > 0 &&
+              documents.map((file, index) => (
+                <View
+                  key={index}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: "#EAF1FA",
+                    padding: 10,
+                    borderRadius: 5,
+                    marginBottom: 10,
+                  }}
+                >
+                  <Text style={{ color: "#666666", flex: 1 }}>{file.name}</Text>
+                  <TouchableOpacity onPress={() => removeFile(index)}>
+                    <FontAwesome name="trash" size={16} color="red" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+          </ScrollView>
+          <TouchableOpacity
+            onPress={pickFile}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "#EAF1FA",
+              width: "50%",
+              height: 40,
+              borderRadius: 5,
+              gap: 4,
+              marginTop: 10,
+            }}
+          >
+            <FontAwesome name="upload" size={16} color="#666666" />
+            <Text style={{ color: theme.primaryTextColor }}>Add Document</Text>
+          </TouchableOpacity>
+          {submitButtonPressed && (
+            <Text style={{ color: "red" }}>Upload Document first</Text>
+          )}
           <View
             style={{ marginTop: 20, display: "flex", alignItems: "center" }}
           >

@@ -9,6 +9,9 @@ import { TextInput } from "react-native";
 import { TouchableOpacity } from "react-native";
 import { Alert } from "react-native";
 import { useThemeContext } from "../../../hooks/useTheme";
+import { post } from "../../../utils/apis/TeacherApis/login";
+import { useSelector } from "react-redux";
+import { ActivityIndicator } from "react-native";
 
 export default function ResetPassword({ navigation }) {
   const { theme } = useThemeContext();
@@ -16,6 +19,13 @@ export default function ResetPassword({ navigation }) {
   const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
+  const [passwordMismatchError, setPasswordMismatchError] = useState(false);
+  const [passwordCriteriaError, setPasswordCriteriaError] = useState(false);
+  const [passwordLengthError, setPasswordLengthError] = useState(false);
+  const [Loading, setLoading] = useState(false);
+
+  const userData = useSelector((state) => state?.login?.user);
+  const userId = userData?.id;
 
   const {
     control,
@@ -30,8 +40,52 @@ export default function ResetPassword({ navigation }) {
     setIsNewPasswordVisible(!isNewPasswordVisible);
   };
 
-  const onsubmit = (data) => {
-    Alert.alert(JSON.stringify(data));
+  const onsubmit = async (data) => {
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    const numericRegex = /[0-9]/;
+
+    if (data?.NewPassword != data?.confirmPassword) {
+      setPasswordMismatchError(true);
+      return true;
+    }
+
+    if (
+      !specialCharRegex.test(data?.NewPassword) ||
+      !numericRegex.test(data?.NewPassword)
+    ) {
+      setPasswordCriteriaError(true);
+      return true;
+    }
+    if (data?.NewPassword.length < 5) {
+      setPasswordLengthError(true);
+      return true;
+    }
+
+    try {
+      setLoading(true);
+      const response = await post("user/reset-password", {
+        userId: userId,
+        currentPassword: data?.currentPassword,
+        newPassword: data?.NewPassword,
+        confirmPassword: data?.confirmPassword,
+      });
+      if (response?.errCode == -1) {
+        Alert.alert("Password reset successful");
+        navigation.navigate("Home");
+        setLoading(false);
+      } else if (response?.errMsg) {
+        Alert.alert(response?.errMsg);
+        setLoading(false);
+      } else {
+        console.log(`Error while reseting password`);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.log(`error in Reset password`, error);
+      setLoading(false);
+    }
+
+    // Alert.alert(JSON.stringify(data));
   };
 
   return (
@@ -166,7 +220,12 @@ export default function ResetPassword({ navigation }) {
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    onChangeText={onChange}
+                    onChangeText={(text) => {
+                      onChange(text);
+                      setPasswordMismatchError(false);
+                      setPasswordCriteriaError(false);
+                      setPasswordLengthError(false);
+                    }}
                     placeholder="Enter Current Password"
                     onBlur={onBlur}
                     value={value}
@@ -195,6 +254,17 @@ export default function ResetPassword({ navigation }) {
                 {errors.NewPassword.message}
               </Text>
             )}
+            {passwordLengthError && (
+              <Text style={{ color: "red" }}>
+                Password must be at least 5 characters long
+              </Text>
+            )}
+            {passwordCriteriaError && (
+              <Text style={{ color: "red" }}>
+                Password must contain at least one special character and one
+                number
+              </Text>
+            )}
           </View>
           <View>
             <Text style={{ color: theme.primaryTextColor }}>
@@ -220,7 +290,12 @@ export default function ResetPassword({ navigation }) {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     placeholder="Enter Confirm Password"
-                    onChangeText={onChange}
+                    onChangeText={(text) => {
+                      onChange(text);
+                      setPasswordMismatchError(false);
+                      setPasswordCriteriaError(false);
+                      setPasswordLengthError(false);
+                    }}
                     onBlur={onBlur}
                     value={value}
                     secureTextEntry={!isConfirmPasswordVisible}
@@ -249,7 +324,25 @@ export default function ResetPassword({ navigation }) {
                   marginBottom: 10,
                 }}
               >
-                {errors.confirmPassword.message}
+                {errors.confirmPassword?.message}
+              </Text>
+            )}
+            {passwordMismatchError && (
+              <View>
+                <Text
+                  style={{
+                    color: "red",
+                    marginBottom: 10,
+                  }}
+                >
+                  Passwords not matching
+                </Text>
+              </View>
+            )}
+            {passwordCriteriaError && (
+              <Text style={{ color: "red" }}>
+                Password must contain at least one special character and one
+                number
               </Text>
             )}
           </View>
@@ -265,12 +358,17 @@ export default function ResetPassword({ navigation }) {
             marginHorizontal: "auto",
             borderRadius: 5,
           }}
-          onPress={handleSubmit(onsubmit)}
+          onPress={handleSubmit((data) => {
+            if (Loading) {
+              return null;
+            }
+            onsubmit(data); // Call the form submission handler
+          })}
         >
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF" }}>
-            RESET PASSWORD
+            {Loading ? <ActivityIndicator size={"large"} /> : "RESET PASSWORD"}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> 
       </View>
     </KeyboardAwareScrollView>
   );

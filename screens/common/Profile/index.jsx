@@ -125,10 +125,10 @@ export default function Profile() {
               alignItems: "center",
             }}
           >
-            {user?.ProfileImage != null ? (
+            {user?.profileImage != null ? (
               <View>
                 <Image
-                  source={{ uri: user?.ProfileImage }}
+                  source={{ uri: user?.profileImage }}
                   resizeMode="contain"
                   style={{
                     height: 110,

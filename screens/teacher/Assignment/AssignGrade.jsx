@@ -25,14 +25,16 @@ export default function AssignGrade({
 }) {
   const navigation = useNavigation();
   const { theme } = useThemeContext();
-  const [grade, setGrade] = useState(0);
+  const [grade, setGrade] = useState(-1);
   const [feedback, setFeedback] = useState(null);
   const [isFileOpend, setIsFileOpend] = useState(null);
   const [gradeError, setGradeError] = useState("");
   const [studentData, setStudentdata] = useState();
   const isFocused = useIsFocused();
+  const [gradeValidationError, setGradeValidationError] = useState(false);
 
   console.log(`selectedStudentassignGrade`, selectedStudentassignGrade);
+  console.log(`selectedStudentassignGrade`, grade);
 
   const openAssignmentLink = (link) => {
     Linking.openURL(link);
@@ -47,6 +49,13 @@ export default function AssignGrade({
 
   const handleChangeText = (text) => {
     const numericValue = text.replace(/[^0-9.]/g, "");
+    setGradeValidationError(false);
+    if (numericValue === "" || numericValue === ".") {
+      setGrade(-1);
+      setGradeValidationError(false);
+      setGradeError("");
+      return;
+    }
     setGrade(numericValue);
     if (parseFloat(numericValue) > parseFloat(studentData?.totalMarks)) {
       setGradeError(
@@ -73,10 +82,10 @@ export default function AssignGrade({
       console.log(`fetchStudentAssignment`, response);
       if (response?.errCode == -1) {
         setStudentdata(response?.data);
-        if (response?.data?.grade != null) {
+        if (response?.data?.grade !== null) {
           setGrade(JSON.stringify(response?.data?.grade));
         } else {
-          setGrade(null);
+          setGrade(-1);
         }
         if (response?.data?.feedback != null) {
           setFeedback(response?.data?.feedback);
@@ -101,6 +110,14 @@ export default function AssignGrade({
       if (gradeError != "") {
         return true;
       }
+      console.log(`Student grade`, grade);
+      console.log(`Student grade`, typeof grade);
+      console.log(`Student grade`, typeof parseInt(grade));
+      console.log(`Student grade`, parseInt(grade) < 0);
+      if (parseInt(grade) < 0) {
+        setGradeValidationError(true);
+        return true;
+      }
       const response = await post("assignments/assign-grade", {
         assignmentId: assignmentId,
         studentId: studentData?.studentId,
@@ -109,7 +126,7 @@ export default function AssignGrade({
       });
       console.log(`hiiiii`, response);
       if (response?.errCode == -1) {
-        Alert.alert("Assignment Submitted Successfully");
+        Alert.alert("Grade Submitted Successfully");
         // navigation.navigate("Assignments");
         setIsOpenAssignGradeTab(false);
       } else {
@@ -275,6 +292,11 @@ export default function AssignGrade({
                     </Text>
                   </View>
                 ) : null}
+                {gradeValidationError && (
+                  <View>
+                    <Text style={{ color: "red" }}>Please Assign grade</Text>
+                  </View>
+                )}
               </View>
             </View>
             <View>
