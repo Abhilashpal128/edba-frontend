@@ -22,6 +22,8 @@ import {
   Alert,
   ImageBackground,
   ScrollView,
+  Modal,
+  Pressable,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTheme, Button, Avatar } from "react-native-paper";
@@ -29,7 +31,7 @@ import { Feather } from "react-native-vector-icons";
 import { FontAwesome6 } from "react-native-vector-icons";
 import { AntDesign } from "react-native-vector-icons";
 import { MaterialCommunityIcons } from "react-native-vector-icons";
-
+import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import RBSheet from "react-native-raw-bottom-sheet";
@@ -40,10 +42,14 @@ import { useSelector } from "react-redux";
 // import { theme } from "../../../theming";
 
 export default function Profile() {
+  const [editProfileModal, setEditProfileModal] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
+
   const { theme } = useThemeContext();
   const navigation = useNavigation();
   const refRBSheet = useRef();
   const user = useSelector((state) => state.login.user);
+
   console.log(`user user user`, user);
 
   useLayoutEffect(() => {
@@ -98,6 +104,43 @@ export default function Profile() {
     });
   }, [navigation, theme]);
 
+  const CameraImage = async (mode) => {
+    try {
+      let result = {};
+      if (mode == "gallery") {
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+        });
+      } else {
+        await ImagePicker.requestCameraPermissionsAsync();
+        result = await ImagePicker.launchCameraAsync({
+          cameraType: ImagePicker.CameraType.front,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+        });
+      }
+
+      if (!result?.canceled) {
+        //save Image
+        await SaveImage(result?.assets[0]?.uri);
+      }
+    } catch (error) {}
+  };
+
+  const SaveImage = async (image) => {
+    try {
+      setProfileImage(image);
+      setEditProfileModal(false);
+    } catch (error) {
+      console.log(`error ftom SaveImage`, error);
+    }
+  };
+
   return (
     <SafeAreaView style={{ backgroundColor: theme.backgroundColor, flex: 1 }}>
       <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
@@ -125,20 +168,28 @@ export default function Profile() {
               alignItems: "center",
             }}
           >
-            {user?.profileImage != null ? (
-              <View>
-                <Image
-                  source={{ uri: user?.profileImage }}
-                  resizeMode="contain"
+            {/* {user?.profileImage != null ? ( */}
+            {profileImage != null ? (
+              <>
+                <View
                   style={{
-                    height: 110,
-                    width: 110,
-                    borderRadius: 55,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "flex-end",
                   }}
-                />
-                {/* <Text
+                >
+                  <Image
+                    source={{ uri: profileImage }}
+                    resizeMode="contain"
+                    style={{
+                      height: 70,
+                      width: 70,
+                      borderRadius: 35,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  />
+                  {/* <Text
                 style={{
                   fontSize: 52,
                   color: "#fff",
@@ -147,15 +198,56 @@ export default function Profile() {
                 
                 AP
               </Text> */}
-              </View>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      position: "absolute",
+                      zIndex: 1,
+                      borderRadius: 20,
+                      padding: 3,
+                    }}
+                    onPress={() => {
+                      setEditProfileModal(true);
+                    }}
+                  >
+                    <Entypo name="camera" size={20} color={"#FF9800"} />
+                  </TouchableOpacity>
+                </View>
+              </>
             ) : (
-              <View>
+              <View
+                style={{
+                  // borderWidth: 2,
+                  // // borderRadius: "50%",
+                  // height: 80,
+                  // width: 80,
+                  // borderRadius: 40,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "flex-end",
+                }}
+              >
                 <Avatar.Text
+                  size={70}
                   label={`${user?.firstName?.slice(
                     0,
                     1
                   )}${user?.lastName?.slice(0, 1)}`}
                 />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    position: "absolute",
+                    zIndex: 1,
+                    borderRadius: 20,
+                    padding: 3,
+                  }}
+                  onPress={() => {
+                    setEditProfileModal(true);
+                  }}
+                >
+                  <Entypo name="camera" size={20} color={"#FF9800"} />
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -475,8 +567,185 @@ export default function Profile() {
           <Logout bottomSheetRef={refRBSheet} />
         </RBSheet>
       }
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editProfileModal}
+        onRequestClose={() => {
+          Alert.alert("Modal has been closed.");
+          setEditProfileModal(!editProfileModal);
+        }}
+      >
+        <TouchableWithoutFeedback onPress={() => setEditProfileModal(false)}>
+          <View style={styles.centeredView}>
+            <TouchableWithoutFeedback>
+              <View
+                style={{
+                  margin: 20,
+                  backgroundColor: "white",
+                  borderRadius: 20,
+                  padding: 35,
+                  width: "80%",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  shadowColor: "#000",
+                  shadowOffset: {
+                    width: 0,
+                    height: 2,
+                  },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 4,
+                  elevation: 5,
+                  gap: 10,
+                }}
+              >
+                <View>
+                  <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                    Profile Photo
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View style={{ width: "30%" }}>
+                    <TouchableOpacity
+                      style={{ backgroundColor: "#D3D3D3", borderRadius: 5 }}
+                      onPress={() => {
+                        CameraImage("camera");
+                      }}
+                    >
+                      <View
+                        style={{
+                          marginHorizontal: 10,
+                          marginVertical: 8,
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <Entypo name="camera" size={20} color={"#FF9800"} />
+                        <Text style={{ fontSize: 12 }}>Camera</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <View>
+                    <TouchableOpacity
+                      style={{ backgroundColor: "#d3d3d3", borderRadius: 5 }}
+                      onPress={() => {
+                        CameraImage("gallery");
+                      }}
+                    >
+                      <View
+                        style={{
+                          marginHorizontal: 10,
+                          marginVertical: 8,
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <MaterialIcons
+                          name="photo-size-select-actual"
+                          size={20}
+                          color={"#FF9800"}
+                        />
+                        <Text style={{ fontSize: 12 }}>Gallery</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <View>
+                    <TouchableOpacity
+                      style={{ backgroundColor: "#D3D3D3", borderRadius: 5 }}
+                      onPress={() => {
+                        setProfileImage(null);
+                        setEditProfileModal(false);
+                      }}
+                    >
+                      <View
+                        style={{
+                          marginHorizontal: 10,
+                          marginVertical: 8,
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <Feather name="trash-2" size={20} color={"#FF9800"} />
+                        <Text style={{ fontSize: 12 }}>Remove</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {/* <Pressable
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={() => setEditProfileModal(!editProfileModal)}
+                >
+                  <Text style={styles.textStyle}>Hide Modal</Text>
+                </Pressable> */}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({});
+// const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.77)", // Black color with 87% opacity
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    width: "80%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+  },
+});
